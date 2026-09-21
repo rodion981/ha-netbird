@@ -1,0 +1,52 @@
+{
+  "title": "NetBird",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Підключення до NetBird Cloud",
+        "description": "Введіть персональний токен доступу з дозволом на читання облікового запису та пірів.",
+        "data": {
+          "api_token": "Персональний токен доступу"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Повторне підключення до NetBird Cloud",
+        "description": "Введіть новий персональний токен доступу для того самого облікового запису NetBird.",
+        "data": {
+          "api_token": "Персональний токен доступу"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Персональний токен доступу недійсний або протермінований.",
+      "insufficient_permissions": "Персональний токен доступу не має дозволу на читання облікового запису та пірів.",
+      "cannot_connect": "Не вдалося підключитися до NetBird Cloud.",
+      "invalid_response": "NetBird Cloud повернув недійсну відповідь.",
+      "unknown": "Сталася неочікувана помилка."
+    },
+    "abort": {
+      "already_configured": "Цей обліковий запис NetBird уже налаштовано.",
+      "reauth_account_mismatch": "Персональний токен доступу належить іншому обліковому запису NetBird.",
+      "reauth_successful": "Автентифікацію NetBird успішно оновлено."
+    }
+  },
+  "exceptions": {
+    "invalid_auth": {"message": "Помилка автентифікації NetBird. Оновіть персональний токен доступу."},
+    "insufficient_permissions": {"message": "Токен NetBird не має дозволу на читання облікового запису або пірів."},
+    "cannot_connect": {"message": "NetBird Cloud наразі недоступний. Налаштування буде повторено."},
+    "invalid_response": {"message": "NetBird Cloud повернув недійсну відповідь облікового запису або пірів. Налаштування буде повторено."},
+    "unknown": {"message": "Сталася неочікувана помилка NetBird Cloud. Налаштування буде повторено."}
+  },
+  "entity": {
+    "binary_sensor": {
+      "connected": {"name": "З’єднання"},
+      "login_expired": {"name": "Термін входу минув"},
+      "approval_required": {"name": "Потрібне схвалення"}
+    },
+    "sensor": {
+      "last_seen": {"name": "Востаннє онлайн"},
+      "peer_count": {"name": "Усього пірів"},
+      "connected_peer_count": {"name": "Підключені піри"}
+    }
+  }
+}

@@ -1,0 +1,13 @@
+[
+  {
+    "connected": true,
+    "created_at": "2026-01-01T00:00:00Z",
+    "id": "peer-test-id",
+    "ip": "100.64.0.2",
+    "last_seen": "2026-01-01T00:01:00Z",
+    "name": "test-peer",
+    "os": "linux",
+    "version": "0.0.0-test"
+  }
+]
+

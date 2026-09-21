@@ -1,0 +1,52 @@
+{
+  "title": "NetBird",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to NetBird Cloud",
+        "description": "Enter a personal access token with permission to read the account and peers.",
+        "data": {
+          "api_token": "Personal access token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect NetBird Cloud",
+        "description": "Enter a replacement personal access token for the same NetBird account.",
+        "data": {
+          "api_token": "Personal access token"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The personal access token is invalid or expired.",
+      "insufficient_permissions": "The personal access token does not have permission to read the account and peers.",
+      "cannot_connect": "Failed to connect to NetBird Cloud.",
+      "invalid_response": "NetBird Cloud returned an invalid response.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This NetBird account is already configured.",
+      "reauth_account_mismatch": "The personal access token belongs to a different NetBird account.",
+      "reauth_successful": "NetBird authentication was updated successfully."
+    }
+  },
+  "exceptions": {
+    "invalid_auth": {"message": "NetBird authentication failed. Update the personal access token."},
+    "insufficient_permissions": {"message": "The NetBird token lacks permission to read the account or peers."},
+    "cannot_connect": {"message": "NetBird Cloud is currently unreachable. Setup will retry."},
+    "invalid_response": {"message": "NetBird Cloud returned an invalid account or peer response. Setup will retry."},
+    "unknown": {"message": "An unexpected NetBird Cloud error occurred. Setup will retry."}
+  },
+  "entity": {
+    "binary_sensor": {
+      "connected": {"name": "Connection"},
+      "login_expired": {"name": "Login expired"},
+      "approval_required": {"name": "Approval required"}
+    },
+    "sensor": {
+      "last_seen": {"name": "Last seen"},
+      "peer_count": {"name": "Total peers"},
+      "connected_peer_count": {"name": "Connected peers"}
+    }
+  }
+}

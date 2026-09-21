@@ -1,0 +1,8 @@
+title = "NetBird repository and generated-artifact scan"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exclude local dependency and tool caches, not source or test artifacts"
+paths = ['''(^|/)(\.git|\.venv|\.venv-wsl|\.mypy_cache|\.ruff_cache)(/|$)''']
