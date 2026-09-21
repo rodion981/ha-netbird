@@ -30,7 +30,7 @@ jobs:
       - name: Type check
         run: uv run mypy
       - name: Test
-        run: uv run pytest -q --cov=custom_components.netbird --cov-report=term-missing --cov-fail-under=95
+        run: uv run python -m pytest -q --cov=custom_components.netbird --cov-report=term-missing --cov-fail-under=95
       - name: Install Gitleaks
         run: |
           curl --fail --location --silent --show-error \
@@ -48,6 +48,7 @@ jobs:
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
     steps:
       - uses: hacs/action@main

@@ -12,6 +12,7 @@ from homeassistant.exceptions import (
     ConfigEntryError,
     ConfigEntryNotReady,
 )
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -27,6 +28,7 @@ from .coordinator import NetBirdPeerCoordinator
 from .models import NetBirdAccount
 
 PLATFORMS = (Platform.BINARY_SENSOR, Platform.SENSOR)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 @dataclass(frozen=True, slots=True)

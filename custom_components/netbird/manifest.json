@@ -1,12 +1,12 @@
 {
+  "domain": "netbird",
+  "name": "NetBird",
   "codeowners": ["@rodion981"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://docs.netbird.io/",
-  "domain": "netbird",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "name": "NetBird",
   "requirements": [],
   "version": "0.1.0"
 }

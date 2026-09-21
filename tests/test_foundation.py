@@ -17,6 +17,7 @@ from pytest_homeassistant_custom_component.common import (  # type: ignore[impor
     MockConfigEntry,
 )
 
+import custom_components.netbird as netbird_integration
 from custom_components.netbird import (
     NetBirdRuntimeData,
     async_setup_entry,
@@ -125,11 +126,19 @@ def test_manifest_and_translation_baseline() -> None:
                 assert translation["exceptions"][key]["message"]
 
 
+def test_yaml_configuration_is_reported_as_unsupported(caplog: Any) -> None:
+    """Test legacy YAML setup reports the config-entry-only boundary."""
+    config: dict[str, Any] = {DOMAIN: {}}
+
+    assert netbird_integration.CONFIG_SCHEMA(config) == config
+    assert "does not support YAML setup" in caplog.text
+
+
 def test_hacs_metadata() -> None:
     """Test the planned HACS distribution metadata is minimal and valid."""
     hacs = json.loads((REPOSITORY_ROOT / "hacs.json").read_text(encoding="utf-8"))
 
-    assert hacs == {"name": "NetBird", "render_readme": True}
+    assert hacs == {"name": "NetBird"}
 
 
 def test_fixture_convention(
