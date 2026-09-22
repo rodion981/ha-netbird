@@ -40,11 +40,13 @@ def test_v020_release_metadata_and_documentation() -> None:
     """Release metadata and bilingual docs describe the shipped monitoring model."""
     manifest = json.loads((INTEGRATION / "manifest.json").read_text(encoding="utf-8"))
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lockfile = (ROOT / "uv.lock").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     readme_uk = (ROOT / "README.uk.md").read_text(encoding="utf-8")
 
     assert manifest["version"] == "0.2.0"
     assert 'version = "0.2.0"' in pyproject
+    assert 'name = "ha-netbird"\nversion = "0.2.0"' in lockfile
     assert "auto-entities" not in readme.casefold()
     assert "auto-entities" not in readme_uk.casefold()
     for text in (readme, readme_uk):
