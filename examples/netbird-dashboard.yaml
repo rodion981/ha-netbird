@@ -1,9 +1,5 @@
-# Universal NetBird dashboard for Home Assistant.
-# Requires the Auto Entities dashboard card from HACS:
-# https://github.com/thomasloven/lovelace-auto-entities
-#
-# The filters use the integration and device class instead of entity IDs.
-# New NetBird peers therefore appear automatically.
+# Native, dependency-free NetBird dashboard for Home Assistant.
+# Paste this file into a dashboard's raw configuration editor.
 
 title: NetBird
 views:
@@ -11,90 +7,124 @@ views:
     path: netbird
     icon: mdi:vpn
     cards:
-      - type: custom:auto-entities
-        card:
-          type: glance
-          title: Overview / Огляд
-          columns: 2
-          show_name: true
-          show_state: true
-        filter:
-          include:
-            - integration: netbird
-              domain: sensor
-              not:
-                attributes:
-                  device_class: timestamp
-        sort:
-          method: name
-          ignore_case: true
+      - type: markdown
+        title: NetBird
+        content: |-
+          {% set netbird_entities = integration_entities("netbird") %}
+          {% macro value(entity_id) -%}
+            {%- if not entity_id -%}—
+            {%- elif states(entity_id) == 'unavailable' -%}Unavailable
+            {%- elif states(entity_id) == 'unknown' -%}Unknown
+            {%- else -%}{{ states(entity_id) }}
+            {%- endif -%}
+          {%- endmacro %}
+          {% macro boolean_value(entity_id) -%}
+            {%- if not entity_id -%}—
+            {%- elif states(entity_id) == 'on' -%}Yes
+            {%- elif states(entity_id) == 'off' -%}No
+            {%- elif states(entity_id) == 'unavailable' -%}Unavailable
+            {%- else -%}Unknown
+            {%- endif -%}
+          {%- endmacro %}
 
-      - type: custom:auto-entities
-        card:
-          type: entities
-          title: Connections / Підключення
-          show_header_toggle: false
-        filter:
-          include:
-            - integration: netbird
-              domain: binary_sensor
-              attributes:
-                device_class: connectivity
-              options:
-                secondary_info: last-changed
-        sort:
-          method: name
-          ignore_case: true
+          ## Overview / Огляд
 
-      - type: custom:auto-entities
-        show_empty: false
-        card:
-          type: entities
-          title: Needs attention / Потребує уваги
-          show_header_toggle: false
-        filter:
-          include:
-            - integration: netbird
-              domain: binary_sensor
-              state: "on"
-              attributes:
-                device_class: problem
-              options:
-                secondary_info: last-changed
-        sort:
-          method: name
-          ignore_case: true
+          {% set overview = namespace(peers=none, connected=none, networks=none, resources=none, routers=none) %}
+          {% for entity_id in netbird_entities %}
+            {% set device = device_id(entity_id) %}
+            {% if device and device_attr(device, 'name') == 'NetBird account' %}
+              {% set key = state_attr(entity_id, 'netbird_key') %}
+              {% if key == 'peer_count' %}{% set overview.peers = entity_id %}{% endif %}
+              {% if key == 'connected_peer_count' %}{% set overview.connected = entity_id %}{% endif %}
+              {% if key == 'network_count' %}{% set overview.networks = entity_id %}{% endif %}
+              {% if key == 'resource_count' %}{% set overview.resources = entity_id %}{% endif %}
+              {% if key == 'router_count' %}{% set overview.routers = entity_id %}{% endif %}
+            {% endif %}
+          {% endfor %}
+          | Peers | Connected | Networks | Resources | Routers |
+          |:--|--:|--:|--:|--:|
+          | {{ value(overview.peers) }} | {{ value(overview.connected) }} | {{ value(overview.networks) }} | {{ value(overview.resources) }} | {{ value(overview.routers) }} |
 
-      - type: custom:auto-entities
-        show_empty: false
-        card:
-          type: entities
-          title: Last seen / Востаннє онлайн
-          show_header_toggle: false
-        filter:
-          include:
-            - integration: netbird
-              domain: sensor
-              attributes:
-                device_class: timestamp
-              options:
-                secondary_info: last-changed
-        sort:
-          method: state
-          reverse: true
+          ## Peers / Піри
 
-      - type: custom:auto-entities
-        show_empty: false
-        card:
-          type: entities
-          title: Unavailable / Недоступні
-          show_header_toggle: false
-        filter:
-          include:
-            - integration: netbird
-              state: unavailable
-              options:
-                secondary_info: last-changed
-        sort:
-          method: name
-          ignore_case: true
+          {% set peer_seeds = namespace(items=[]) %}
+          {% for entity_id in netbird_entities %}
+            {% if state_attr(entity_id, 'netbird_key') == 'connected' %}
+              {% set peer_seeds.items = peer_seeds.items + [entity_id] %}
+            {% endif %}
+          {% endfor %}
+          {% if peer_seeds.items | count == 0 %}
+          _No peer entities / Немає peer-сутностей._
+          {% else %}
+          | Name | Connected | IP | Last seen | Last login | Accessible | SSH | Ephemeral | Login expired | Approval required |
+          |:--|:--:|:--|:--|:--|--:|:--:|:--:|:--:|:--:|
+          {% for seed in peer_seeds.items %}
+            {% set device = device_id(seed) %}
+            {% set row = namespace(connected=seed, ip=none, seen=none, login=none, accessible=none, ssh=none, ephemeral=none, expired=none, approval=none) %}
+            {% for entity_id in device_entities(device) %}
+              {% set key = state_attr(entity_id, 'netbird_key') %}
+              {% if key == 'ip_address' %}{% set row.ip = entity_id %}{% endif %}
+              {% if key == 'last_seen' %}{% set row.seen = entity_id %}{% endif %}
+              {% if key == 'last_login' %}{% set row.login = entity_id %}{% endif %}
+              {% if key == 'accessible_peers' %}{% set row.accessible = entity_id %}{% endif %}
+              {% if key == 'ssh_enabled' %}{% set row.ssh = entity_id %}{% endif %}
+              {% if key == 'ephemeral' %}{% set row.ephemeral = entity_id %}{% endif %}
+              {% if key == 'login_expired' %}{% set row.expired = entity_id %}{% endif %}
+              {% if key == 'approval_required' %}{% set row.approval = entity_id %}{% endif %}
+            {% endfor %}
+          | {{ device_attr(device, 'name') | replace('|', '\\|') }} | {{ boolean_value(row.connected) }} | {{ value(row.ip) }} | {{ value(row.seen) }} | {{ value(row.login) }} | {{ value(row.accessible) }} | {{ boolean_value(row.ssh) }} | {{ boolean_value(row.ephemeral) }} | {{ boolean_value(row.expired) }} | {{ boolean_value(row.approval) }} |
+          {% endfor %}
+          {% endif %}
+
+          ## Networks / Мережі
+
+          {% set network_seeds = namespace(items=[]) %}
+          {% for entity_id in netbird_entities %}
+            {% if state_attr(entity_id, 'netbird_key') == 'connected_routing_peers' %}
+              {% set network_seeds.items = network_seeds.items + [entity_id] %}
+            {% endif %}
+          {% endfor %}
+          {% if network_seeds.items | count == 0 %}
+          _No networks / Немає мереж._
+          {% else %}
+          | Name | Resources | Enabled resources | Routers | Enabled routers | Connected routing peers |
+          |:--|--:|--:|--:|--:|--:|
+          {% for seed in network_seeds.items %}
+            {% set device = device_id(seed) %}
+            {% set row = namespace(resources=none, enabled_resources=none, routers=none, enabled_routers=none, connected=seed) %}
+            {% for entity_id in device_entities(device) %}
+              {% set key = state_attr(entity_id, 'netbird_key') %}
+              {% if key == 'resource_count' %}{% set row.resources = entity_id %}{% endif %}
+              {% if key == 'enabled_resource_count' %}{% set row.enabled_resources = entity_id %}{% endif %}
+              {% if key == 'router_count' %}{% set row.routers = entity_id %}{% endif %}
+              {% if key == 'enabled_router_count' %}{% set row.enabled_routers = entity_id %}{% endif %}
+            {% endfor %}
+          | {{ device_attr(device, 'name') | replace('|', '\\|') }} | {{ value(row.resources) }} | {{ value(row.enabled_resources) }} | {{ value(row.routers) }} | {{ value(row.enabled_routers) }} | {{ value(row.connected) }} |
+          {% endfor %}
+          {% endif %}
+
+          ## Network resources / Мережеві ресурси
+
+          {% set resource_seeds = namespace(items=[]) %}
+          {% for entity_id in netbird_entities %}
+            {% if state_attr(entity_id, 'netbird_key') == 'resource_type' %}
+              {% set resource_seeds.items = resource_seeds.items + [entity_id] %}
+            {% endif %}
+          {% endfor %}
+          {% if resource_seeds.items | count == 0 %}
+          _No network resources / Немає мережевих ресурсів._
+          {% else %}
+          | Name | Network | Enabled | Address | Type |
+          |:--|:--|:--:|:--|:--|
+          {% for seed in resource_seeds.items %}
+            {% set device = device_id(seed) %}
+            {% set row = namespace(enabled=none, address=none, type=seed) %}
+            {% for entity_id in device_entities(device) %}
+              {% set key = state_attr(entity_id, 'netbird_key') %}
+              {% if key == 'enabled' %}{% set row.enabled = entity_id %}{% endif %}
+              {% if key == 'address' %}{% set row.address = entity_id %}{% endif %}
+            {% endfor %}
+            {% set parent = device_attr(device, 'via_device_id') %}
+          | {{ device_attr(device, 'name') | replace('|', '\\|') }} | {{ device_attr(parent, 'name') if parent else '—' }} | {{ boolean_value(row.enabled) }} | {{ value(row.address) }} | {{ value(row.type) }} |
+          {% endfor %}
+          {% endif %}
