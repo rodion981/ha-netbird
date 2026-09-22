@@ -132,16 +132,20 @@ Track `(peer_id, description.key)` instead of only peer IDs. Skip fields that ha
 - [ ] **Step 4: Add SSH and ephemeral binary descriptions**
 
 ```python
-BinarySensorEntityDescription(
-    key="ssh_enabled",
-    translation_key="ssh_enabled",
-    entity_category=EntityCategory.DIAGNOSTIC,
-),
-BinarySensorEntityDescription(
-    key="ephemeral",
-    translation_key="ephemeral",
-    entity_category=EntityCategory.DIAGNOSTIC,
-),
+(
+    BinarySensorEntityDescription(
+        key="ssh_enabled",
+        translation_key="ssh_enabled",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+(
+    BinarySensorEntityDescription(
+        key="ephemeral",
+        translation_key="ephemeral",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
 ```
 
 Set `login_expired` and `approval_required` to diagnostic category. Keep `connected` primary.

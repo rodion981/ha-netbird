@@ -79,6 +79,7 @@ class NetBirdResource:
     type: str
     enabled: bool
 
+
 @dataclass(frozen=True, slots=True)
 class NetBirdRouter:
     id: str
@@ -86,6 +87,7 @@ class NetBirdRouter:
     enabled: bool
     peer_id: str | None = None
     peer_group_ids: tuple[str, ...] = ()
+
 
 @dataclass(frozen=True, slots=True)
 class NetBirdNetwork:
@@ -150,6 +152,7 @@ class NetBirdNetworkTopology:
     resources: tuple[NetBirdResource, ...] | None
     routers: tuple[NetBirdRouter, ...] | None
 
+
 @dataclass(frozen=True, slots=True)
 class NetBirdTopologySnapshot:
     networks: tuple[NetBirdNetworkTopology, ...]
@@ -162,7 +165,10 @@ class NetBirdTopologySnapshot:
 ```python
 semaphore = asyncio.Semaphore(TOPOLOGY_REQUEST_CONCURRENCY)
 
-async def fetch_resources(network: NetBirdNetwork) -> tuple[NetBirdResource, ...] | None:
+
+async def fetch_resources(
+    network: NetBirdNetwork,
+) -> tuple[NetBirdResource, ...] | None:
     async with semaphore:
         try:
             return await self._client.async_get_network_resources(network.id)
@@ -219,7 +225,9 @@ class NetBirdNetworkEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
     def __init__(self, entry: NetBirdConfigEntry, network_id: str, key: str) -> None:
         super().__init__(entry.runtime_data.topology_coordinator)
         self._network_id = network_id
-        self._attr_unique_id = f"{entry.runtime_data.account_id}:network:{network_id}:{key}"
+        self._attr_unique_id = (
+            f"{entry.runtime_data.account_id}:network:{network_id}:{key}"
+        )
         self._attr_extra_state_attributes = {"netbird_key": key}
 ```
 

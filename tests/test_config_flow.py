@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import (  # type: ignore[impor
     MockConfigEntry,
 )
 
+from custom_components.netbird import async_migrate_entry
 from custom_components.netbird.api import (
     NetBirdAuthenticationError,
     NetBirdJsonError,
@@ -25,7 +26,6 @@ from custom_components.netbird.api import (
     NetBirdTimeoutError,
     NetBirdTransportError,
 )
-from custom_components.netbird import async_migrate_entry
 from custom_components.netbird.const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
 from custom_components.netbird.models import NetBirdAccount, NetBirdSnapshot
 
@@ -71,12 +71,15 @@ async def test_migrate_v1_enables_only_integration_disabled_promoted_entities(
     assert await async_migrate_entry(hass, entry)
 
     assert entry.version == 2
-    assert registry.async_get(integration_disabled.entity_id).disabled_by is None
-    assert registry.async_get(promoted_approval.entity_id).disabled_by is None
-    assert (
-        registry.async_get(user_disabled.entity_id).disabled_by
-        is er.RegistryEntryDisabler.USER
-    )
+    migrated_seen = registry.async_get(integration_disabled.entity_id)
+    migrated_approval = registry.async_get(promoted_approval.entity_id)
+    preserved_user_choice = registry.async_get(user_disabled.entity_id)
+    assert migrated_seen is not None
+    assert migrated_approval is not None
+    assert preserved_user_choice is not None
+    assert migrated_seen.disabled_by is None
+    assert migrated_approval.disabled_by is None
+    assert preserved_user_choice.disabled_by is er.RegistryEntryDisabler.USER
 
 
 def _snapshot(account_id: str = ACCOUNT_ID) -> NetBirdSnapshot:

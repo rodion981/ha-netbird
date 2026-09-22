@@ -75,9 +75,7 @@ PEER_DESCRIPTIONS = (
     ),
 )
 
-SENSOR_VALUE_GETTERS: dict[
-    str, Callable[[NetBirdPeer], StateType | datetime]
-] = {
+SENSOR_VALUE_GETTERS: dict[str, Callable[[NetBirdPeer], StateType | datetime]] = {
     "last_seen": lambda peer: peer.last_seen,
     "ip_address": lambda peer: peer.ip,
     "accessible_peers": lambda peer: peer.accessible_peers_count,
