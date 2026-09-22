@@ -1,0 +1,14 @@
+[
+  {
+    "id": "peer-anonymized",
+    "name": "test-peer",
+    "connected": true,
+    "created_at": "2026-01-01T00:00:00Z",
+    "last_seen": "2026-01-02T00:00:00Z",
+    "last_login": "2026-01-01T01:00:00Z",
+    "accessible_peers_count": 2,
+    "login_expired": false,
+    "approval_required": false,
+    "ephemeral": false
+  }
+]

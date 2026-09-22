@@ -96,10 +96,17 @@ class NetBirdApiClient:
         """Return normalized peers available to the PAT."""
         payload = await self._async_get_json(_PEERS_PATH)
         peers = _require_list(payload, _PEERS_PATH)
-        return tuple(
-            _parse_peer(_require_mapping(peer, f"peer[{index}]"))
-            for index, peer in enumerate(peers)
-        )
+        parsed_peers: list[NetBirdPeer] = []
+        seen_ids: set[str] = set()
+        for index, peer in enumerate(peers):
+            parsed_peer = _parse_peer(_require_mapping(peer, f"peer[{index}]"))
+            if parsed_peer.id in seen_ids:
+                raise NetBirdSchemaError(
+                    "NetBird peers response contains a duplicate peer id"
+                )
+            seen_ids.add(parsed_peer.id)
+            parsed_peers.append(parsed_peer)
+        return tuple(parsed_peers)
 
     async def async_get_snapshot(self) -> NetBirdSnapshot:
         """Return the account and peer data for one refresh."""
@@ -235,12 +242,12 @@ def _parse_peer(data: Mapping[str, Any]) -> NetBirdPeer:
     return NetBirdPeer(
         id=_required_identifier(data, "peer"),
         name=_optional_string(data, "name"),
-        created_at=_optional_datetime(data, "created_at"),
+        created_at=_optional_timestamp(data, "created_at"),
         ip=_optional_string(data, "ip"),
         ipv6=_optional_string(data, "ipv6"),
         connection_ip=_optional_string(data, "connection_ip"),
         connected=_optional_bool(data, "connected"),
-        last_seen=_optional_last_seen(data),
+        last_seen=_optional_timestamp(data, "last_seen"),
         os=_optional_string(data, "os"),
         kernel_version=_optional_string(data, "kernel_version"),
         geoname_id=_optional_int(data, "geoname_id"),
@@ -252,7 +259,7 @@ def _parse_peer(data: Mapping[str, Any]) -> NetBirdPeer:
         dns_label=_optional_string(data, "dns_label"),
         login_expiration_enabled=_optional_bool(data, "login_expiration_enabled"),
         login_expired=_optional_bool(data, "login_expired"),
-        last_login=_optional_datetime(data, "last_login"),
+        last_login=_optional_timestamp(data, "last_login"),
         inactivity_expiration_enabled=_optional_bool(
             data, "inactivity_expiration_enabled"
         ),
@@ -266,10 +273,10 @@ def _parse_peer(data: Mapping[str, Any]) -> NetBirdPeer:
     )
 
 
-def _optional_last_seen(data: Mapping[str, Any]) -> datetime | None:
-    """Treat an invalid optional last-seen value as unknown, not a bad snapshot."""
+def _optional_timestamp(data: Mapping[str, Any], field: str) -> datetime | None:
+    """Treat an invalid optional timestamp as unknown, not a bad snapshot."""
     try:
-        value = _optional_datetime(data, "last_seen")
+        value = _optional_datetime(data, field)
     except NetBirdSchemaError:
         return None
     return value.astimezone(UTC) if value is not None else None

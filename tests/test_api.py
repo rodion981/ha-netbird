@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, Self, cast
@@ -115,6 +116,28 @@ async def test_snapshot_success_and_request_contract(
         assert kwargs["timeout"] == ClientTimeout(total=API_TIMEOUT_SECONDS)
 
 
+async def test_anonymized_live_bulk_shape_fixture(load_netbird_fixture: Any) -> None:
+    """Parse synthetic values matching fields/types observed in Cloud bulk data."""
+    payload = load_netbird_fixture("peers_live_shape.json")
+    client, session = make_client(FakeResponse(payload))
+
+    assert await client.async_get_peers() == (
+        NetBirdPeer(
+            id="peer-anonymized",
+            name="test-peer",
+            connected=True,
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            last_seen=datetime(2026, 1, 2, tzinfo=UTC),
+            last_login=datetime(2026, 1, 1, 1, tzinfo=UTC),
+            accessible_peers_count=2,
+            login_expired=False,
+            approval_required=False,
+            ephemeral=False,
+        ),
+    )
+    assert len(session.requests) == 1
+
+
 async def test_missing_optional_peer_fields_are_normalized() -> None:
     """Test omitted and unavailable optional fields do not fail a refresh."""
     client, _ = make_client(FakeResponse([{"id": "peer-minimal"}]))
@@ -122,6 +145,28 @@ async def test_missing_optional_peer_fields_are_normalized() -> None:
     peers = await client.async_get_peers()
 
     assert peers == (NetBirdPeer(id="peer-minimal"),)
+
+
+async def test_null_optional_peer_fields_are_normalized() -> None:
+    """Optional null values do not reject an otherwise valid bulk list."""
+    client, _ = make_client(
+        FakeResponse(
+            [
+                {
+                    "id": "peer",
+                    "name": None,
+                    "connected": None,
+                    "created_at": None,
+                    "last_seen": None,
+                    "last_login": None,
+                    "accessible_peers_count": None,
+                    "extra_dns_labels": None,
+                }
+            ]
+        )
+    )
+
+    assert await client.async_get_peers() == (NetBirdPeer(id="peer"),)
 
 
 async def test_authentication_error_is_secret_safe(caplog: Any) -> None:
@@ -270,6 +315,7 @@ async def test_invalid_account_schema(payload: Any) -> None:
         [None],
         [{}],
         [{"id": "peer", "connected": "yes"}],
+        [{"id": "peer", "accessible_peers_count": True}],
         [{"id": "peer", "extra_dns_labels": ["valid", 3]}],
     ],
 )
@@ -298,3 +344,61 @@ async def test_last_seen_with_offset_is_normalized_to_utc() -> None:
     assert (await client.async_get_peers())[0].last_seen == datetime(
         2026, 1, 2, 3, 4, tzinfo=UTC
     )
+
+
+@pytest.mark.parametrize("field", ["created_at", "last_login"])
+@pytest.mark.parametrize("value", ["invalid", "2026-01-01", 123])
+async def test_invalid_optional_peer_timestamps_are_unknown(
+    field: str, value: Any
+) -> None:
+    """An invalid optional timestamp cannot invalidate an authoritative peer."""
+    client, _ = make_client(FakeResponse([{"id": "peer", field: value}]))
+
+    assert getattr((await client.async_get_peers())[0], field) is None
+
+
+@pytest.mark.parametrize("field", ["created_at", "last_login"])
+async def test_optional_peer_timestamps_are_normalized_to_utc(field: str) -> None:
+    """All parsed peer timestamps use the same UTC normalization."""
+    client, _ = make_client(
+        FakeResponse([{"id": "peer", field: "2026-01-02T05:04:00+02:00"}])
+    )
+
+    assert getattr((await client.async_get_peers())[0], field) == datetime(
+        2026, 1, 2, 3, 4, tzinfo=UTC
+    )
+
+
+async def test_duplicate_peer_ids_invalidate_authoritative_snapshot() -> None:
+    """One peer ID cannot identify two records in the same bulk response."""
+    client, _ = make_client(
+        FakeResponse([{"id": "peer"}, {"id": "peer", "connected": False}])
+    )
+
+    with pytest.raises(NetBirdSchemaError, match="duplicate peer id"):
+        await client.async_get_peers()
+
+
+async def test_bulk_peer_request_budget_for_large_snapshot() -> None:
+    """A large bulk inventory still needs only one API request."""
+    client, session = make_client(
+        FakeResponse([{"id": f"peer-{index}"} for index in range(1000)])
+    )
+
+    peers = await client.async_get_peers()
+
+    assert len(peers) == 1000
+    assert [url for url, _ in session.requests] == [f"{API_BASE_URL}/api/peers"]
+
+
+async def test_cancelled_bulk_request_is_not_mapped_to_transport_failure() -> None:
+    """Cancellation propagates to Home Assistant instead of becoming a retry."""
+
+    class CancelledSession:
+        def get(self, _url: str, **_kwargs: Any) -> None:
+            raise asyncio.CancelledError
+
+    client = NetBirdApiClient(cast(ClientSession, CancelledSession()), TOKEN)
+
+    with pytest.raises(asyncio.CancelledError):
+        await client.async_get_peers()
