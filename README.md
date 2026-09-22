@@ -75,6 +75,8 @@ Create a replacement PAT for the same account. Open the NetBird entry and choose
 
 The integration polls peers every 60 seconds with one shared coordinator. A separate coordinator polls Networks every 300 seconds. After the network list, Resources and Routers are fetched with a shared concurrency limit of six. A failed nested section affects only that network section; a failed topology refresh does not affect peer states.
 
+Connected routing peers counts only routers linked to a concrete connected peer ID. Group-based routers are excluded because the API does not identify one concrete peer for them, so the value can be zero while group-based routers exist.
+
 Failed refreshes make coordinator entities unavailable rather than showing stale values as current. A peer absent from a successful list becomes unavailable. A missing optional boolean leaves its sensor unavailable rather than showing `off`. A missing or invalid last seen timestamp produces no value. The connected flag does not test VPN routing, DNS, ACLs, or peer-to-peer traffic.
 
 After 10 consecutive **successful** snapshots omit a peer, its integration-owned registry entries are removed. Failed refreshes do not advance the count; a returning peer resets it. The count is held in memory, so reloads or restarts can delay cleanup. Ambiguous device or entity ownership blocks removal and creates a Home Assistant Repair. Recorder history already stored by Home Assistant follows its own retention settings.

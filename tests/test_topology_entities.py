@@ -196,6 +196,44 @@ async def test_stale_resource_and_network_devices_are_removed(
         is None
     )
 
+    topology_client.async_get_networks.return_value = (NETWORK,)
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert (
+        _state(
+            hass,
+            _entity_id(
+                hass,
+                "sensor",
+                f"{ACCOUNT}:network:network-1:connected_routing_peers",
+            ),
+        )
+        == "1"
+    )
+    assert (
+        _state(
+            hass,
+            _entity_id(
+                hass,
+                "sensor",
+                f"{ACCOUNT}:network:network-1:resource:resource-1:address",
+            ),
+        )
+        == "192.0.2.0/24"
+    )
+    assert (
+        _state(
+            hass,
+            _entity_id(
+                hass,
+                "binary_sensor",
+                f"{ACCOUNT}:network:network-1:resource:resource-1:enabled",
+            ),
+        )
+        == "on"
+    )
+
 
 async def test_foreign_device_association_blocks_topology_cleanup(
     hass: HomeAssistant, topology_client: MagicMock

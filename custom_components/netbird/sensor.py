@@ -194,6 +194,12 @@ async def async_setup_entry(
     def add_new_topology_entities() -> None:
         if not topology.last_update_success or topology.data is None:
             return
+        registry = er.async_get(hass)
+        known_topology_entities.intersection_update(
+            unique_id
+            for unique_id in known_topology_entities
+            if registry.async_get_entity_id("sensor", DOMAIN, unique_id) is not None
+        )
         entities: list[SensorEntity] = []
         for item in topology.data.networks:
             network_device = device_registry.async_get_or_create(

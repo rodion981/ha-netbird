@@ -121,6 +121,13 @@ async def async_setup_entry(
     def add_new_resource_entities() -> None:
         if not topology.last_update_success or topology.data is None:
             return
+        registry = er.async_get(hass)
+        known_resources.intersection_update(
+            unique_id
+            for unique_id in known_resources
+            if registry.async_get_entity_id("binary_sensor", DOMAIN, unique_id)
+            is not None
+        )
         entities: list[NetBirdResourceEnabledBinarySensor] = []
         for item in topology.data.networks:
             network_device = device_registry.async_get_or_create(

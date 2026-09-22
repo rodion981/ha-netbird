@@ -53,11 +53,7 @@ views:
               {% set peer_seeds.items = peer_seeds.items + [entity_id] %}
             {% endif %}
           {% endfor %}
-          {% if peer_seeds.items | count == 0 %}
-          _No peer entities / Немає peer-сутностей._
-          {% else %}
-          | Name | Connected | IP | Last seen | Last login | Accessible | SSH | Ephemeral | Login expired | Approval required |
-          |:--|:--:|:--|:--|:--|--:|:--:|:--:|:--:|:--:|
+          {% set peer_rows = namespace(items=[]) %}
           {% for seed in peer_seeds.items %}
             {% set device = device_id(seed) %}
             {% set row = namespace(connected=seed, ip=none, seen=none, login=none, accessible=none, ssh=none, ephemeral=none, expired=none, approval=none) %}
@@ -72,8 +68,15 @@ views:
               {% if key == 'login_expired' %}{% set row.expired = entity_id %}{% endif %}
               {% if key == 'approval_required' %}{% set row.approval = entity_id %}{% endif %}
             {% endfor %}
-          | {{ device_attr(device, 'name') | replace('|', '\\|') }} | {{ boolean_value(row.connected) }} | {{ value(row.ip) }} | {{ value(row.seen) }} | {{ value(row.login) }} | {{ value(row.accessible) }} | {{ boolean_value(row.ssh) }} | {{ boolean_value(row.ephemeral) }} | {{ boolean_value(row.expired) }} | {{ boolean_value(row.approval) }} |
+            {% set peer_name = device_attr(device, 'name') | replace('|', '\\|') %}
+            {% set peer_rows.items = peer_rows.items + ['| ' ~ peer_name ~ ' | ' ~ boolean_value(row.connected) ~ ' | ' ~ value(row.ip) ~ ' | ' ~ value(row.seen) ~ ' | ' ~ value(row.login) ~ ' | ' ~ value(row.accessible) ~ ' | ' ~ boolean_value(row.ssh) ~ ' | ' ~ boolean_value(row.ephemeral) ~ ' | ' ~ boolean_value(row.expired) ~ ' | ' ~ boolean_value(row.approval) ~ ' |'] %}
           {% endfor %}
+          {% if peer_seeds.items | count == 0 %}
+          _No peer entities / Немає peer-сутностей._
+          {% else %}
+          | Name | Connected | IP | Last seen | Last login | Accessible | SSH | Ephemeral | Login expired | Approval required |
+          |:--|:--:|:--|:--|:--|--:|:--:|:--:|:--:|:--:|
+          {{ peer_rows.items | join('\n') }}
           {% endif %}
 
           ## Networks / Мережі
@@ -84,11 +87,7 @@ views:
               {% set network_seeds.items = network_seeds.items + [entity_id] %}
             {% endif %}
           {% endfor %}
-          {% if network_seeds.items | count == 0 %}
-          _No networks / Немає мереж._
-          {% else %}
-          | Name | Resources | Enabled resources | Routers | Enabled routers | Connected routing peers |
-          |:--|--:|--:|--:|--:|--:|
+          {% set network_rows = namespace(items=[]) %}
           {% for seed in network_seeds.items %}
             {% set device = device_id(seed) %}
             {% set row = namespace(resources=none, enabled_resources=none, routers=none, enabled_routers=none, connected=seed) %}
@@ -99,8 +98,15 @@ views:
               {% if key == 'router_count' %}{% set row.routers = entity_id %}{% endif %}
               {% if key == 'enabled_router_count' %}{% set row.enabled_routers = entity_id %}{% endif %}
             {% endfor %}
-          | {{ device_attr(device, 'name') | replace('|', '\\|') }} | {{ value(row.resources) }} | {{ value(row.enabled_resources) }} | {{ value(row.routers) }} | {{ value(row.enabled_routers) }} | {{ value(row.connected) }} |
+            {% set network_name = device_attr(device, 'name') | replace('|', '\\|') %}
+            {% set network_rows.items = network_rows.items + ['| ' ~ network_name ~ ' | ' ~ value(row.resources) ~ ' | ' ~ value(row.enabled_resources) ~ ' | ' ~ value(row.routers) ~ ' | ' ~ value(row.enabled_routers) ~ ' | ' ~ value(row.connected) ~ ' |'] %}
           {% endfor %}
+          {% if network_seeds.items | count == 0 %}
+          _No networks / Немає мереж._
+          {% else %}
+          | Name | Resources | Enabled resources | Routers | Enabled routers | Connected routing peers |
+          |:--|--:|--:|--:|--:|--:|
+          {{ network_rows.items | join('\n') }}
           {% endif %}
 
           ## Network resources / Мережеві ресурси
@@ -111,11 +117,7 @@ views:
               {% set resource_seeds.items = resource_seeds.items + [entity_id] %}
             {% endif %}
           {% endfor %}
-          {% if resource_seeds.items | count == 0 %}
-          _No network resources / Немає мережевих ресурсів._
-          {% else %}
-          | Name | Network | Enabled | Address | Type |
-          |:--|:--|:--:|:--|:--|
+          {% set resource_rows = namespace(items=[]) %}
           {% for seed in resource_seeds.items %}
             {% set device = device_id(seed) %}
             {% set row = namespace(enabled=none, address=none, type=seed) %}
@@ -125,6 +127,14 @@ views:
               {% if key == 'address' %}{% set row.address = entity_id %}{% endif %}
             {% endfor %}
             {% set parent = device_attr(device, 'via_device_id') %}
-          | {{ device_attr(device, 'name') | replace('|', '\\|') }} | {{ device_attr(parent, 'name') if parent else '—' }} | {{ boolean_value(row.enabled) }} | {{ value(row.address) }} | {{ value(row.type) }} |
+            {% set resource_name = device_attr(device, 'name') | replace('|', '\\|') %}
+            {% set network_name = device_attr(parent, 'name') if parent else '—' %}
+            {% set resource_rows.items = resource_rows.items + ['| ' ~ resource_name ~ ' | ' ~ network_name ~ ' | ' ~ boolean_value(row.enabled) ~ ' | ' ~ value(row.address) ~ ' | ' ~ value(row.type) ~ ' |'] %}
           {% endfor %}
+          {% if resource_seeds.items | count == 0 %}
+          _No network resources / Немає мережевих ресурсів._
+          {% else %}
+          | Name | Network | Enabled | Address | Type |
+          |:--|:--|:--:|:--|:--|
+          {{ resource_rows.items | join('\n') }}
           {% endif %}
