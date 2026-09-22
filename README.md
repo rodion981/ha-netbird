@@ -20,19 +20,21 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Project status
 
-Version `0.1.0` is the first public release. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
+Version `0.2.0` adds useful peer diagnostics and current NetBird Networks topology. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
 
 ## Features
 
 - One Cloud account per configuration entry, authenticated by personal access token (PAT).
 - One coordinated peer list poll every 60 seconds; new peers appear without a reload.
-- Account sensors: total peer count and connected peer count.
-- Peer binary sensors: connected, login expired, and approval required. Approval required is disabled by default and created only if supplied by the API.
-- Peer last seen timestamp, disabled by default. Missing or invalid timestamps have no value.
+- Account sensors: peer, network, resource, and router totals.
+- Peer states: connection, last seen, IP address, accessible peers, last login, SSH, ephemeral, login expired, and approval required when supplied by the API.
+- Optional peer diagnostics disabled by default: IPv6 address, hostname, DNS label, and operating system.
+- Current NetBird **Networks**, Resources, and Routers with per-network summaries and resource devices. Deprecated legacy Routes are intentionally excluded.
+- Independent topology polling every five minutes with at most six nested requests in flight. A refresh costs `1 + 2N` API requests for `N` networks.
 - Redacted aggregate diagnostics and a Repair when stale peer cleanup is blocked.
 - English and Ukrainian interface translations.
 
-Only the fixed `https://api.netbird.io` Cloud endpoint is supported. Self-hosted endpoints and topology entities are post-`0.1.0` work. Legacy Routes, write actions, traffic metrics, and VPN path tests are outside this release.
+Only the fixed `https://api.netbird.io` Cloud endpoint is supported. Self-hosted endpoints, legacy Routes, write actions, traffic metrics, and VPN path tests are outside this release.
 
 ## Installation
 
@@ -52,13 +54,12 @@ The button opens HACS; downloading and setting up the integration remain separat
 
 ### Dashboard example
 
-The [universal NetBird dashboard](examples/netbird-dashboard.yaml) discovers entities by integration, domain, and device class, so it does not depend on generated entity IDs or peer names.
+The [universal NetBird dashboard](examples/netbird-dashboard.yaml) is one native Markdown card. It discovers entities through the integration and stable `netbird_key`, so it does not depend on generated entity IDs or peer names.
 
-1. Install [Auto Entities](https://github.com/thomasloven/lovelace-auto-entities) from HACS as a dashboard card.
-2. Create an empty dashboard in Home Assistant.
-3. Open its **Raw configuration editor** and paste the example YAML.
+1. Create an empty dashboard in Home Assistant.
+2. Open its **Raw configuration editor** and paste the example YAML.
 
-The dashboard shows account totals, peer connections, active problems, enabled last-seen diagnostics, and unavailable entities. Last-seen and approval-required entities are disabled by default; enable them in the entity registry if you want those sections populated.
+The dashboard shows account totals, useful peer details, Networks, and network resources. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card.
 
 ### Manual installation and upgrades
 
@@ -72,7 +73,7 @@ Create a replacement PAT for the same account. Open the NetBird entry and choose
 
 ## Data updates and availability
 
-The integration polls peers every 60 seconds with one shared coordinator. Account sensors count the latest successful peer list; connected count includes only explicit `connected: true`. No traffic probe or push update is used.
+The integration polls peers every 60 seconds with one shared coordinator. A separate coordinator polls Networks every 300 seconds. After the network list, Resources and Routers are fetched with a shared concurrency limit of six. A failed nested section affects only that network section; a failed topology refresh does not affect peer states.
 
 Failed refreshes make coordinator entities unavailable rather than showing stale values as current. A peer absent from a successful list becomes unavailable. A missing optional boolean leaves its sensor unavailable rather than showing `off`. A missing or invalid last seen timestamp produces no value. The connected flag does not test VPN routing, DNS, ACLs, or peer-to-peer traffic.
 
@@ -80,7 +81,7 @@ After 10 consecutive **successful** snapshots omit a peer, its integration-owned
 
 ## Privacy and troubleshooting
 
-The PAT is stored in the Home Assistant config entry and sent to NetBird Cloud for API reads. Protect backups and never share the PAT. Peer names, addresses, and status may appear in Home Assistant entities, history, and backups. The integration adds no separate persistent peer database. Diagnostics include only version, Cloud deployment class, refresh success/time/error class, and aggregate peer counts; no token, peer identity, address, or raw response. Review any diagnostic export before sharing.
+The PAT is stored in the Home Assistant config entry and sent to NetBird Cloud for API reads. Protect backups and never share the PAT. Enabled peer IP, hostname, DNS label, operating system, and resource address entities are visible to Home Assistant Recorder and may appear in history and backups. The integration adds no separate persistent database. Diagnostics contain only versions, refresh status/error classes, and aggregate counts; never tokens, identities, names, addresses, private URLs, or raw responses. Review any diagnostic export before sharing.
 
 | Symptom | Check |
 | --- | --- |
@@ -95,7 +96,7 @@ To remove the integration, delete its entry in **Settings > Devices & services >
 
 ## API contract and limits
 
-The integration reads `GET /api/accounts` and `GET /api/peers` at the fixed Cloud endpoint. It expects exactly one account and a peer list with unique, nonempty IDs. Optional peer fields may be absent or null. Malformed required structure rejects a snapshot; invalid optional timestamps become unknown. Requests have a 10-second total timeout. HTTP 429 and server failures wait for a later coordinator poll. The integration implements no pagination and assumes no undocumented fields. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); status codes can be ambiguous, so a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized data; this README claims no production live validation.
+The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, and each network's `/resources` and `/routers` endpoints at the fixed Cloud endpoint. It never calls deprecated `/api/routes`. Required IDs and topology fields are validated; optional peer fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized data; this README claims no production live validation.
 
 ## Development and support
 

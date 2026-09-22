@@ -79,7 +79,7 @@ async def test_diagnostics_allowlist_and_failure_privacy(hass: HomeAssistant) ->
         requests_before = client.async_get_peers.await_count
         success = await async_get_config_entry_diagnostics(hass, entry)
         assert success == {
-            "integration_version": "0.1.0",
+            "integration_version": "0.2.0",
             "deployment_class": "cloud",
             "coordinator": {
                 "last_update_success": True,
