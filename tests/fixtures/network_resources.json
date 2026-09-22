@@ -1,0 +1,1 @@
+[{"id":"resource-test-id","type":"subnet","name":"Home subnet","description":"Test resource","address":"192.0.2.0/24","enabled":true,"groups":[]}]

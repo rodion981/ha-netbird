@@ -58,7 +58,8 @@
       "login_expired": {"name": "Термін входу минув"},
       "approval_required": {"name": "Потрібне схвалення"},
       "ssh_enabled": {"name": "SSH увімкнено"},
-      "ephemeral": {"name": "Ефемерний"}
+      "ephemeral": {"name": "Ефемерний"},
+      "resource_enabled": {"name": "Увімкнено"}
     },
     "sensor": {
       "last_seen": {"name": "Востаннє онлайн"},
@@ -70,7 +71,15 @@
       "dns_label": {"name": "DNS-мітка"},
       "operating_system": {"name": "Операційна система"},
       "peer_count": {"name": "Усього пірів"},
-      "connected_peer_count": {"name": "Підключені піри"}
+      "connected_peer_count": {"name": "Підключені піри"},
+      "network_count": {"name": "Мережі"},
+      "resource_count": {"name": "Ресурси"},
+      "enabled_resource_count": {"name": "Увімкнені ресурси"},
+      "router_count": {"name": "Маршрутизатори"},
+      "enabled_router_count": {"name": "Увімкнені маршрутизатори"},
+      "connected_routing_peers": {"name": "Підключені піри маршрутизації"},
+      "resource_address": {"name": "Адреса"},
+      "resource_type": {"name": "Тип"}
     }
   }
 }

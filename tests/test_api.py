@@ -24,7 +24,13 @@ from custom_components.netbird.api import (
     NetBirdUpdateError,
 )
 from custom_components.netbird.const import API_BASE_URL, API_TIMEOUT_SECONDS
-from custom_components.netbird.models import NetBirdAccount, NetBirdPeer
+from custom_components.netbird.models import (
+    NetBirdAccount,
+    NetBirdNetwork,
+    NetBirdPeer,
+    NetBirdResource,
+    NetBirdRouter,
+)
 
 TOKEN = "test-pat-must-not-be-logged"
 
@@ -402,3 +408,54 @@ async def test_cancelled_bulk_request_is_not_mapped_to_transport_failure() -> No
 
     with pytest.raises(asyncio.CancelledError):
         await client.async_get_peers()
+
+
+async def test_topology_endpoints_and_typed_models(load_netbird_fixture: Any) -> None:
+    """Current topology endpoints return typed, network-scoped records."""
+    client, session = make_client(
+        FakeResponse(load_netbird_fixture("networks.json")),
+        FakeResponse(load_netbird_fixture("network_resources.json")),
+        FakeResponse(load_netbird_fixture("network_routers.json")),
+    )
+
+    assert await client.async_get_networks() == (
+        NetBirdNetwork("network-test-id", "Home LAN", "Test network"),
+    )
+    assert await client.async_get_network_resources("network-test-id") == (
+        NetBirdResource(
+            "resource-test-id",
+            "network-test-id",
+            "Home subnet",
+            "192.0.2.0/24",
+            "subnet",
+            True,
+        ),
+    )
+    assert await client.async_get_network_routers("network-test-id") == (
+        NetBirdRouter(
+            "router-test-id",
+            "network-test-id",
+            True,
+            peer_id="peer-test-id",
+        ),
+    )
+    assert [url for url, _ in session.requests] == [
+        f"{API_BASE_URL}/api/networks",
+        f"{API_BASE_URL}/api/networks/network-test-id/resources",
+        f"{API_BASE_URL}/api/networks/network-test-id/routers",
+    ]
+    assert all(
+        request[1]["headers"]["Authorization"] == f"Token {TOKEN}"
+        for request in session.requests
+    )
+
+
+@pytest.mark.parametrize("network_id", ["", " ", "network/id"])
+async def test_topology_rejects_invalid_network_path_id(network_id: str) -> None:
+    """Untrusted IDs cannot alter endpoint paths."""
+    client, session = make_client()
+
+    with pytest.raises(NetBirdSchemaError):
+        await client.async_get_network_resources(network_id)
+
+    assert not session.requests

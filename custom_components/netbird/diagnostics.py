@@ -20,6 +20,9 @@ async def async_get_config_entry_diagnostics(
     coordinator = runtime.coordinator if runtime is not None else None
     peers = coordinator.data if coordinator is not None else None
     error = coordinator.last_exception if coordinator is not None else None
+    topology = runtime.topology_coordinator if runtime is not None else None
+    topology_snapshot = topology.data if topology is not None else None
+    topology_error = topology.last_exception if topology is not None else None
 
     return {
         "integration_version": integration.version,
@@ -41,6 +44,29 @@ async def async_get_config_entry_diagnostics(
             "connected": (
                 sum(peer.connected is True for peer in peers)
                 if peers is not None
+                else None
+            ),
+        },
+        "topology": {
+            "last_update_success": (
+                topology.last_update_success if topology is not None else False
+            ),
+            "error_class": (
+                type(topology_error).__name__ if topology_error is not None else None
+            ),
+            "networks": (
+                len(topology_snapshot.networks)
+                if topology_snapshot is not None
+                else None
+            ),
+            "complete_resource_sections": (
+                sum(item.resources is not None for item in topology_snapshot.networks)
+                if topology_snapshot is not None
+                else None
+            ),
+            "complete_router_sections": (
+                sum(item.routers is not None for item in topology_snapshot.networks)
+                if topology_snapshot is not None
                 else None
             ),
         },

@@ -28,6 +28,8 @@ from .const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
 from .coordinator import NetBirdPeerCoordinator
 from .lifecycle import async_setup_peer_lifecycle
 from .models import NetBirdAccount
+from .topology import NetBirdTopologyCoordinator
+from .topology_lifecycle import async_setup_topology_lifecycle
 
 PLATFORMS = (Platform.BINARY_SENSOR, Platform.SENSOR)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -39,6 +41,7 @@ class NetBirdRuntimeData:
 
     client: NetBirdApiClient
     coordinator: NetBirdPeerCoordinator
+    topology_coordinator: NetBirdTopologyCoordinator
     account: NetBirdAccount
 
     @property
@@ -115,11 +118,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: NetBirdConfigEntry) -> b
 
     coordinator = NetBirdPeerCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
+    topology_coordinator = NetBirdTopologyCoordinator(hass, entry, client)
+    await topology_coordinator.async_refresh()
     entry.runtime_data = NetBirdRuntimeData(
-        client=client, coordinator=coordinator, account=account
+        client=client,
+        coordinator=coordinator,
+        topology_coordinator=topology_coordinator,
+        account=account,
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     async_setup_peer_lifecycle(hass, entry)
+    async_setup_topology_lifecycle(hass, entry)
     return True
 
 

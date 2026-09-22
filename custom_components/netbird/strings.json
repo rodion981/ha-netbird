@@ -58,7 +58,8 @@
       "login_expired": {"name": "Login expired"},
       "approval_required": {"name": "Approval required"},
       "ssh_enabled": {"name": "SSH enabled"},
-      "ephemeral": {"name": "Ephemeral"}
+      "ephemeral": {"name": "Ephemeral"},
+      "resource_enabled": {"name": "Enabled"}
     },
     "sensor": {
       "last_seen": {"name": "Last seen"},
@@ -70,7 +71,15 @@
       "dns_label": {"name": "DNS label"},
       "operating_system": {"name": "Operating system"},
       "peer_count": {"name": "Total peers"},
-      "connected_peer_count": {"name": "Connected peers"}
+      "connected_peer_count": {"name": "Connected peers"},
+      "network_count": {"name": "Networks"},
+      "resource_count": {"name": "Resources"},
+      "enabled_resource_count": {"name": "Enabled resources"},
+      "router_count": {"name": "Routers"},
+      "enabled_router_count": {"name": "Enabled routers"},
+      "connected_routing_peers": {"name": "Connected routing peers"},
+      "resource_address": {"name": "Address"},
+      "resource_type": {"name": "Type"}
     }
   }
 }

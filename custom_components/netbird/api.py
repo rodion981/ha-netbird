@@ -9,10 +9,18 @@ from typing import Any, Final
 from aiohttp import ClientError, ClientSession, ClientTimeout, ContentTypeError
 
 from .const import API_BASE_URL, API_TIMEOUT_SECONDS
-from .models import NetBirdAccount, NetBirdPeer, NetBirdSnapshot
+from .models import (
+    NetBirdAccount,
+    NetBirdNetwork,
+    NetBirdPeer,
+    NetBirdResource,
+    NetBirdRouter,
+    NetBirdSnapshot,
+)
 
 _ACCOUNTS_PATH: Final = "/api/accounts"
 _PEERS_PATH: Final = "/api/peers"
+_NETWORKS_PATH: Final = "/api/networks"
 _TIMEOUT: Final = ClientTimeout(total=API_TIMEOUT_SECONDS)
 
 
@@ -114,6 +122,38 @@ class NetBirdApiClient:
         peers = await self.async_get_peers()
         return NetBirdSnapshot(account=account, peers=peers)
 
+    async def async_get_networks(self) -> tuple[NetBirdNetwork, ...]:
+        """Return the current Networks inventory."""
+        payload = await self._async_get_json(_NETWORKS_PATH)
+        return tuple(
+            _parse_network(_require_mapping(item, f"network[{index}]"))
+            for index, item in enumerate(_require_list(payload, _NETWORKS_PATH))
+        )
+
+    async def async_get_network_resources(
+        self, network_id: str
+    ) -> tuple[NetBirdResource, ...]:
+        """Return resources attached to one network."""
+        network_id = _validated_path_id(network_id, "network")
+        path = f"/api/networks/{network_id}/resources"
+        payload = await self._async_get_json(path)
+        return tuple(
+            _parse_resource(_require_mapping(item, f"resource[{index}]"), network_id)
+            for index, item in enumerate(_require_list(payload, path))
+        )
+
+    async def async_get_network_routers(
+        self, network_id: str
+    ) -> tuple[NetBirdRouter, ...]:
+        """Return routers attached to one network."""
+        network_id = _validated_path_id(network_id, "network")
+        path = f"/api/networks/{network_id}/routers"
+        payload = await self._async_get_json(path)
+        return tuple(
+            _parse_router(_require_mapping(item, f"router[{index}]"), network_id)
+            for index, item in enumerate(_require_list(payload, path))
+        )
+
     async def _async_get_json(self, path: str) -> Any:
         """Request JSON and map all failures to integration-safe exceptions."""
         headers = {
@@ -181,6 +221,28 @@ def _required_identifier(data: Mapping[str, Any], context: str) -> str:
     value = data.get("id")
     if not isinstance(value, str) or not value.strip():
         raise NetBirdSchemaError(f"NetBird {context} id must be a non-empty string")
+    return value
+
+
+def _required_string(data: Mapping[str, Any], field: str, context: str) -> str:
+    value = data.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise NetBirdSchemaError(
+            f"NetBird {context} {field} must be a non-empty string"
+        )
+    return value
+
+
+def _required_bool(data: Mapping[str, Any], field: str, context: str) -> bool:
+    value = data.get(field)
+    if not isinstance(value, bool):
+        raise NetBirdSchemaError(f"NetBird {context} {field} must be a boolean")
+    return value
+
+
+def _validated_path_id(value: str, context: str) -> str:
+    if not isinstance(value, str) or not value.strip() or "/" in value:
+        raise NetBirdSchemaError(f"NetBird {context} id is invalid")
     return value
 
 
@@ -270,6 +332,36 @@ def _parse_peer(data: Mapping[str, Any]) -> NetBirdPeer:
         extra_dns_labels=_optional_string_tuple(data, "extra_dns_labels"),
         ephemeral=_optional_bool(data, "ephemeral"),
         accessible_peers_count=_optional_int(data, "accessible_peers_count"),
+    )
+
+
+def _parse_network(data: Mapping[str, Any]) -> NetBirdNetwork:
+    return NetBirdNetwork(
+        id=_required_identifier(data, "network"),
+        name=_required_string(data, "name", "network"),
+        description=_optional_string(data, "description"),
+    )
+
+
+def _parse_resource(data: Mapping[str, Any], network_id: str) -> NetBirdResource:
+    return NetBirdResource(
+        id=_required_identifier(data, "resource"),
+        network_id=network_id,
+        name=_required_string(data, "name", "resource"),
+        address=_required_string(data, "address", "resource"),
+        type=_required_string(data, "type", "resource"),
+        enabled=_required_bool(data, "enabled", "resource"),
+    )
+
+
+def _parse_router(data: Mapping[str, Any], network_id: str) -> NetBirdRouter:
+    peer_group_ids = _optional_string_tuple(data, "peer_groups")
+    return NetBirdRouter(
+        id=_required_identifier(data, "router"),
+        network_id=network_id,
+        enabled=_required_bool(data, "enabled", "router"),
+        peer_id=_optional_string(data, "peer"),
+        peer_group_ids=peer_group_ids,
     )
 
 

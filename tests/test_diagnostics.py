@@ -14,7 +14,7 @@ from pytest_homeassistant_custom_component.common import (  # type: ignore[impor
 from custom_components.netbird.api import NetBirdTransportError
 from custom_components.netbird.const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
 from custom_components.netbird.diagnostics import async_get_config_entry_diagnostics
-from custom_components.netbird.models import NetBirdAccount, NetBirdPeer
+from custom_components.netbird.models import NetBirdAccount, NetBirdNetwork, NetBirdPeer
 
 ACCOUNT = "account-private-id-sentinel"
 SECRET_VALUES = (
@@ -67,6 +67,11 @@ async def test_diagnostics_allowlist_and_failure_privacy(hass: HomeAssistant) ->
         client = client_class.return_value
         client.async_get_account = AsyncMock(return_value=NetBirdAccount(id=ACCOUNT))
         client.async_get_peers = AsyncMock(return_value=peers)
+        client.async_get_networks = AsyncMock(
+            return_value=(NetBirdNetwork("network-private", "private-name"),)
+        )
+        client.async_get_network_resources = AsyncMock(return_value=())
+        client.async_get_network_routers = AsyncMock(return_value=())
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         coordinator = entry.runtime_data.coordinator
@@ -84,6 +89,13 @@ async def test_diagnostics_allowlist_and_failure_privacy(hass: HomeAssistant) ->
                 "error_class": None,
             },
             "peers": {"total": 2, "connected": 1},
+            "topology": {
+                "last_update_success": True,
+                "error_class": None,
+                "networks": 1,
+                "complete_resource_sections": 1,
+                "complete_router_sections": 1,
+            },
         }
         assert (
             datetime.fromisoformat(
@@ -133,3 +145,10 @@ async def test_unloaded_entry_diagnostics_do_not_invent_zero_counts(
         "error_class": None,
     }
     assert diagnostics["peers"] == {"total": None, "connected": None}
+    assert diagnostics["topology"] == {
+        "last_update_success": False,
+        "error_class": None,
+        "networks": None,
+        "complete_resource_sections": None,
+        "complete_router_sections": None,
+    }

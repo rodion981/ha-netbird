@@ -53,3 +53,35 @@ class NetBirdSnapshot:
 
     account: NetBirdAccount
     peers: tuple[NetBirdPeer, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class NetBirdNetwork:
+    """A current NetBird network."""
+
+    id: str
+    name: str
+    description: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class NetBirdResource:
+    """A resource exposed through a NetBird network."""
+
+    id: str
+    network_id: str
+    name: str
+    address: str
+    type: str
+    enabled: bool
+
+
+@dataclass(frozen=True, slots=True)
+class NetBirdRouter:
+    """A peer or peer-group router attached to a network."""
+
+    id: str
+    network_id: str
+    enabled: bool
+    peer_id: str | None = None
+    peer_group_ids: tuple[str, ...] = ()
