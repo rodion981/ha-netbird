@@ -24,6 +24,7 @@ class NetBirdPeerEntity(CoordinatorEntity[NetBirdPeerCoordinator]):
         self._peer_id = peer.id
         account_id = entry.runtime_data.account_id
         self._attr_unique_id = f"{account_id}:{peer.id}:{key}"
+        self._attr_extra_state_attributes = {"netbird_key": key}
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{account_id}:{peer.id}")},
             manufacturer="NetBird",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import override
 
 from homeassistant.components.binary_sensor import (
@@ -11,6 +12,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import NetBirdConfigEntry
@@ -30,14 +32,33 @@ DESCRIPTIONS = (
         key="login_expired",
         translation_key="login_expired",
         device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     BinarySensorEntityDescription(
         key="approval_required",
         translation_key="approval_required",
         device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    BinarySensorEntityDescription(
+        key="ssh_enabled",
+        translation_key="ssh_enabled",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    BinarySensorEntityDescription(
+        key="ephemeral",
+        translation_key="ephemeral",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 )
+
+BINARY_VALUE_GETTERS: dict[str, Callable[[NetBirdPeer], bool | None]] = {
+    "connected": lambda peer: peer.connected,
+    "login_expired": lambda peer: peer.login_expired,
+    "approval_required": lambda peer: peer.approval_required,
+    "ssh_enabled": lambda peer: peer.ssh_enabled,
+    "ephemeral": lambda peer: peer.ephemeral,
+}
 
 
 async def async_setup_entry(
@@ -117,8 +138,4 @@ class NetBirdPeerBinarySensor(NetBirdPeerEntity, BinarySensorEntity):
 
     def _value(self, peer: NetBirdPeer) -> bool | None:
         """Select only approved typed peer fields."""
-        if self.entity_description.key == "connected":
-            return peer.connected
-        if self.entity_description.key == "login_expired":
-            return peer.login_expired
-        return peer.approval_required
+        return BINARY_VALUE_GETTERS[self.entity_description.key](peer)

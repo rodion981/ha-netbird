@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import override
 
@@ -15,6 +16,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NetBirdConfigEntry
@@ -25,12 +27,69 @@ from .models import NetBirdPeer
 
 PARALLEL_UPDATES = 0
 
-LAST_SEEN_DESCRIPTION = SensorEntityDescription(
-    key="last_seen",
-    translation_key="last_seen",
-    device_class=SensorDeviceClass.TIMESTAMP,
-    entity_category=EntityCategory.DIAGNOSTIC,
-    entity_registry_enabled_default=False,
+PEER_DESCRIPTIONS = (
+    SensorEntityDescription(
+        key="last_seen",
+        translation_key="last_seen",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SensorEntityDescription(
+        key="ip_address",
+        translation_key="ip_address",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="accessible_peers",
+        translation_key="accessible_peers",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="last_login",
+        translation_key="last_login",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="ipv6_address",
+        translation_key="ipv6_address",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="hostname",
+        translation_key="hostname",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="dns_label",
+        translation_key="dns_label",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="operating_system",
+        translation_key="operating_system",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+)
+
+SENSOR_VALUE_GETTERS: dict[
+    str, Callable[[NetBirdPeer], StateType | datetime]
+] = {
+    "last_seen": lambda peer: peer.last_seen,
+    "ip_address": lambda peer: peer.ip,
+    "accessible_peers": lambda peer: peer.accessible_peers_count,
+    "last_login": lambda peer: peer.last_login,
+    "ipv6_address": lambda peer: peer.ipv6,
+    "hostname": lambda peer: peer.hostname,
+    "dns_label": lambda peer: peer.dns_label,
+    "operating_system": lambda peer: peer.os,
+}
+
+OPTIONAL_SENSOR_KEYS = frozenset(
+    {"ipv6_address", "hostname", "dns_label", "operating_system"}
 )
 
 ACCOUNT_DESCRIPTIONS = (
@@ -48,7 +107,7 @@ async def async_setup_entry(
 ) -> None:
     """Create account counts and diagnostics for newly discovered peers."""
     coordinator = entry.runtime_data.coordinator
-    known_peer_ids: set[str] = set()
+    known_entities: set[tuple[str, str]] = set()
     async_add_entities(
         NetBirdAccountSensor(entry, description) for description in ACCOUNT_DESCRIPTIONS
     )
@@ -60,21 +119,26 @@ async def async_setup_entry(
 
         registry = er.async_get(hass)
         account_id = entry.runtime_data.account_id
-        known_peer_ids.intersection_update(
-            peer_id
-            for peer_id in known_peer_ids
+        known_entities.intersection_update(
+            identity
+            for identity in known_entities
             if registry.async_get_entity_id(
-                "sensor", DOMAIN, f"{account_id}:{peer_id}:last_seen"
+                "sensor", DOMAIN, f"{account_id}:{identity[0]}:{identity[1]}"
             )
             is not None
         )
 
-        entities: list[NetBirdPeerLastSeen] = []
+        entities: list[NetBirdPeerSensor] = []
         for peer in coordinator.data:
-            if peer.id in known_peer_ids:
-                continue
-            known_peer_ids.add(peer.id)
-            entities.append(NetBirdPeerLastSeen(entry, peer))
+            for description in PEER_DESCRIPTIONS:
+                identity = (peer.id, description.key)
+                if identity in known_entities or (
+                    description.key in OPTIONAL_SENSOR_KEYS
+                    and SENSOR_VALUE_GETTERS[description.key](peer) is None
+                ):
+                    continue
+                known_entities.add(identity)
+                entities.append(NetBirdPeerSensor(entry, peer, description))
         if entities:
             async_add_entities(entities)
 
@@ -111,19 +175,29 @@ class NetBirdAccountSensor(CoordinatorEntity[NetBirdPeerCoordinator], SensorEnti
         return sum(peer.connected is True for peer in self.coordinator.data)
 
 
-class NetBirdPeerLastSeen(NetBirdPeerEntity, SensorEntity):
-    """The last valid, timezone-aware timestamp for a peer."""
+class NetBirdPeerSensor(NetBirdPeerEntity, SensorEntity):
+    """An approved diagnostic value from the shared peer snapshot."""
 
-    entity_description = LAST_SEEN_DESCRIPTION
+    entity_description: SensorEntityDescription
 
-    def __init__(self, entry: NetBirdConfigEntry, peer: NetBirdPeer) -> None:
-        """Initialize with a stable peer identity."""
-        super().__init__(entry, peer, LAST_SEEN_DESCRIPTION.key)
+    def __init__(
+        self,
+        entry: NetBirdConfigEntry,
+        peer: NetBirdPeer,
+        description: SensorEntityDescription,
+    ) -> None:
+        """Initialize with a stable peer identity and description."""
+        super().__init__(entry, peer, description.key)
+        self.entity_description = description
 
     @property
     @override
-    def native_value(self) -> datetime | None:
-        """Return a UTC instant or unknown for missing/invalid timestamps."""
+    def native_value(self) -> StateType | datetime:
+        """Return the selected value and reject naive timestamps."""
         peer = self.peer
-        value = peer.last_seen if peer is not None else None
-        return value.astimezone(UTC) if value is not None and value.tzinfo else None
+        if peer is None:
+            return None
+        value = SENSOR_VALUE_GETTERS[self.entity_description.key](peer)
+        if isinstance(value, datetime):
+            return value.astimezone(UTC) if value.tzinfo else None
+        return value

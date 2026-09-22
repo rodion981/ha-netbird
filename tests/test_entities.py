@@ -31,10 +31,19 @@ PEER = NetBirdPeer(
     id="peer-1",
     name="Test peer",
     version="0.0-test",
+    ip="100.64.0.10",
+    ipv6="fd00::10",
+    hostname="test-peer",
+    dns_label="test-peer.netbird.cloud",
+    os="Linux",
     connected=False,
+    last_seen=datetime(2026, 1, 2, 3, 4, tzinfo=UTC),
+    last_login=datetime(2026, 1, 1, 2, 3, tzinfo=UTC),
+    accessible_peers_count=4,
+    ssh_enabled=True,
+    ephemeral=False,
     login_expired=True,
     approval_required=False,
-    last_seen=datetime(2026, 1, 2, 3, 4, tzinfo=UTC),
 )
 MINIMAL_PEER = NetBirdPeer(id="peer-2")
 NEW_PEER = NetBirdPeer(
@@ -73,7 +82,21 @@ async def _setup(hass: HomeAssistant) -> MockConfigEntry:
 def _entity(hass: HomeAssistant, peer_id: str, key: str) -> er.RegistryEntry | None:
     """Find an entity by its stable integration unique ID."""
     registry = er.async_get(hass)
-    platform = "sensor" if key == "last_seen" else "binary_sensor"
+    platform = (
+        "sensor"
+        if key
+        in {
+            "last_seen",
+            "ip_address",
+            "accessible_peers",
+            "last_login",
+            "ipv6_address",
+            "hostname",
+            "dns_label",
+            "operating_system",
+        }
+        else "binary_sensor"
+    )
     entity_id = registry.async_get_entity_id(
         platform, DOMAIN, f"{ACCOUNT}:{peer_id}:{key}"
     )
@@ -121,9 +144,35 @@ async def test_initial_devices_entities_and_single_request(
     assert expired.original_device_class == approval.original_device_class == "problem"
     assert _state(hass, connected.entity_id).state == "off"
     assert _state(hass, expired.entity_id).state == "on"
-    assert approval.disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert seen.disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert seen.entity_category == "diagnostic"
+    assert approval.disabled_by is None
+    assert seen.disabled_by is None
+    assert seen.entity_category is None
+    expected = {
+        "last_seen": "2026-01-02T03:04:00+00:00",
+        "ip_address": "100.64.0.10",
+        "accessible_peers": "4",
+        "last_login": "2026-01-01T02:03:00+00:00",
+        "ssh_enabled": "on",
+        "ephemeral": "off",
+    }
+    for key, value in expected.items():
+        entity = _entity(hass, PEER.id, key)
+        assert entity is not None
+        state = _state(hass, entity.entity_id)
+        assert state.state == value
+        assert state.attributes["netbird_key"] == key
+    for key in ("ipv6_address", "hostname", "dns_label", "operating_system"):
+        optional = _entity(hass, PEER.id, key)
+        assert optional is not None
+        assert optional.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    for key in ("ip_address", "accessible_peers", "last_login"):
+        missing = _entity(hass, MINIMAL_PEER.id, key)
+        assert missing is not None
+        assert _state(hass, missing.entity_id).state == STATE_UNKNOWN
+    for key in ("connected", "login_expired", "ssh_enabled", "ephemeral"):
+        missing = _entity(hass, MINIMAL_PEER.id, key)
+        assert missing is not None
+        assert _state(hass, missing.entity_id).state == STATE_UNAVAILABLE
     assert _entity(hass, "peer-2", "approval_required") is None
     assert _entity(hass, "peer-2", "last_seen") is not None
     minimal_connection = _entity(hass, "peer-2", "connected")
@@ -247,7 +296,7 @@ async def test_dynamic_peer_lifecycle_without_duplicates(
                 if entity.unique_id.startswith(f"{ACCOUNT}:{NEW_PEER.id}:")
             ]
         )
-        == 4
+        == 9
     )
 
     current = entry.runtime_data.coordinator
