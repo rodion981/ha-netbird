@@ -10,9 +10,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import NetBirdConfigEntry
+from .const import DOMAIN
 from .entity import NetBirdPeerEntity
 from .models import NetBirdPeer
 
@@ -39,17 +41,49 @@ DESCRIPTIONS = (
 
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     entry: NetBirdConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Create only the applicable entities in the initial snapshot."""
-    async_add_entities(
-        NetBirdPeerBinarySensor(entry, peer, description)
-        for peer in entry.runtime_data.coordinator.data
-        for description in DESCRIPTIONS
-        if description.key != "approval_required" or peer.approval_required is not None
-    )
+    """Create applicable entities now and when new peers are discovered."""
+    coordinator = entry.runtime_data.coordinator
+    known_entities: set[tuple[str, str]] = set()
+
+    def add_new_entities() -> None:
+        """Add entity descriptions newly supported by a successful snapshot."""
+        if not coordinator.last_update_success:
+            return
+
+        registry = er.async_get(hass)
+        account_id = entry.runtime_data.account_id
+        known_entities.intersection_update(
+            identity
+            for identity in known_entities
+            if registry.async_get_entity_id(
+                "binary_sensor",
+                DOMAIN,
+                f"{account_id}:{identity[0]}:{identity[1]}",
+            )
+            is not None
+        )
+
+        entities: list[NetBirdPeerBinarySensor] = []
+        for peer in coordinator.data:
+            for description in DESCRIPTIONS:
+                identity = (peer.id, description.key)
+                if identity in known_entities or (
+                    description.key == "approval_required"
+                    and peer.approval_required is None
+                ):
+                    continue
+                known_entities.add(identity)
+                entities.append(NetBirdPeerBinarySensor(entry, peer, description))
+
+        if entities:
+            async_add_entities(entities)
+
+    add_new_entities()
+    entry.async_on_unload(coordinator.async_add_listener(add_new_entities))
 
 
 class NetBirdPeerBinarySensor(NetBirdPeerEntity, BinarySensorEntity):

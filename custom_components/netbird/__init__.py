@@ -25,6 +25,7 @@ from .api import (
 )
 from .const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
 from .coordinator import NetBirdPeerCoordinator
+from .lifecycle import async_setup_peer_lifecycle
 from .models import NetBirdAccount
 
 PLATFORMS = (Platform.BINARY_SENSOR, Platform.SENSOR)
@@ -99,6 +100,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: NetBirdConfigEntry) -> b
         client=client, coordinator=coordinator, account=account
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    async_setup_peer_lifecycle(hass, entry)
     return True
 
 

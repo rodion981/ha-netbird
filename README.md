@@ -67,6 +67,20 @@ already revoked, use the same manual action; NetBird may return an ambiguous
 HTTP 404, so the integration does not automatically treat every 404 as an
 authentication failure.
 
+## Peer lifecycle
+
+New peers appear after a successful poll without reloading the integration. A
+peer missing from a successful snapshot remains unavailable while Home
+Assistant retains its device and entities. Cleanup occurs only after 10
+consecutive successful snapshots omit that peer. Failed or malformed refreshes
+do not advance this threshold, and a returning peer resets it.
+
+The absence counter is runtime-only. Reloading or restarting Home Assistant
+resets it, which can only delay cleanup. Before deletion, the integration
+checks that the peer device and every linked entity belong to the same NetBird
+ConfigEntry. Unsafe registry associations block all deletion and create a
+translated Home Assistant Repair with manual guidance.
+
 HACS validation is intentionally skipped while this repository is private,
 because HACS custom repositories must be public. Enable the HACS CI job only
 after the repository is made public and the required brand assets are available.
