@@ -14,7 +14,7 @@ uv run mypy
 uv run python -m pytest -q --cov=custom_components.netbird --cov-report=term-missing --cov-fail-under=95
 ```
 
-On native Windows, run the first three `uv run` checks. Home Assistant runtime tests need Linux/WSL because its import path requires POSIX `fcntl`. CI also runs hassfest and Gitleaks; its HACS job runs only for public repositories. A local pass does not establish those hosted results or a live API pass. Use opt-in, environment-provided disposable credentials for any later live check; never commit the response, diagnostics, or token.
+On native Windows, run the first three `uv run` checks. Home Assistant runtime tests need Linux/WSL because its import path requires POSIX `fcntl`. CI also runs hassfest, HACS validation, and Gitleaks. A local pass does not establish those hosted results or a live API pass. Use opt-in, environment-provided disposable credentials for any later live check; never commit the response, diagnostics, or token.
 
 ## Implemented rule evidence
 

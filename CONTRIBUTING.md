@@ -15,10 +15,9 @@ uv run mypy
 uv run python -m pytest -q --cov=custom_components.netbird --cov-report=term-missing --cov-fail-under=95
 ```
 
-CI also runs hassfest and scans the workspace with Gitleaks. HACS validation is
-enabled for public repositories only because HACS does not support private
-custom repositories. These hosted checks are separate from local Home Assistant
-tests and must pass before the MVP quality gate is complete.
+CI also runs hassfest, HACS validation, and scans the workspace with Gitleaks.
+These hosted checks are separate from local Home Assistant tests and must pass
+before the release quality gate is complete.
 
 Add focused tests for changed behavior. Keep fixtures minimal, anonymized, and
 representative of documented or observed API responses.
