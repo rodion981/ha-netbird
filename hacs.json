@@ -1,3 +1,5 @@
 {
-  "name": "NetBird"
+  "name": "NetBird",
+  "homeassistant": "2026.9.3",
+  "render_readme": true
 }

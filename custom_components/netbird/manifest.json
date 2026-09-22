@@ -7,6 +7,7 @@
   "documentation": "https://docs.netbird.io/",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/rodion981/ha-netbird/issues",
   "requirements": [],
   "version": "0.1.0"
 }

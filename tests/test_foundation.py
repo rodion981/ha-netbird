@@ -135,10 +135,14 @@ def test_yaml_configuration_is_reported_as_unsupported(caplog: Any) -> None:
 
 
 def test_hacs_metadata() -> None:
-    """Test the planned HACS distribution metadata is minimal and valid."""
+    """Test the HACS release metadata declares its compatibility boundary."""
     hacs = json.loads((REPOSITORY_ROOT / "hacs.json").read_text(encoding="utf-8"))
 
-    assert hacs == {"name": "NetBird"}
+    assert hacs == {
+        "name": "NetBird",
+        "homeassistant": "2026.9.3",
+        "render_readme": True,
+    }
 
 
 def test_fixture_convention(
