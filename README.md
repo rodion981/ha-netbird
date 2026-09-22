@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/netbird/brand/icon.png" alt="NetBird" width="180">
+</p>
+
 <h1 align="center">NetBird for Home Assistant</h1>
 <p align="center">Monitor NetBird Cloud peers from Home Assistant.</p>
 
@@ -85,3 +89,5 @@ The integration reads `GET /api/accounts` and `GET /api/peers` at the fixed Clou
 ## Development and support
 
 See the [quality checklist and reproducible gate](docs/QUALITY_SCALE.md) and [contribution guide](CONTRIBUTING.md). Runtime tests require Linux or WSL because Home Assistant imports POSIX-only `fcntl`; Windows supports static checks. Report reproducible bugs through [GitHub Issues](https://github.com/rodion981/ha-netbird/issues) without tokens, private URLs, raw responses, or unredacted diagnostics.
+
+The NetBird logomark comes from the [official NetBird press kit](https://netbird.io/press) and remains a NetBird brand asset.

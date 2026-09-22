@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/netbird/brand/icon.png" alt="NetBird" width="180">
+</p>
+
 <h1 align="center">NetBird для Home Assistant</h1>
 <p align="center">Стан NetBird Cloud у Home Assistant.</p>
 
@@ -85,3 +89,5 @@ PAT зберігається в записі інтеграції Home Assistant
 ## Розробка та підтримка
 
 Дивіться [перелік перевірок якості](docs/QUALITY_SCALE.md) і [правила внеску](CONTRIBUTING.md). Runtime-тести запускайте в Linux або WSL: у Windows Home Assistant імпортує POSIX-модуль `fcntl`. Повідомляйте про відтворювані помилки через [GitHub Issues](https://github.com/rodion981/ha-netbird/issues) без токенів, приватних адрес, сирих відповідей або неочищеної діагностики.
+
+Logomark NetBird взято з [офіційного press kit NetBird](https://netbird.io/press) і він залишається брендовим матеріалом NetBird.
