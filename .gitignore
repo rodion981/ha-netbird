@@ -8,6 +8,7 @@
 .ruff_cache/
 .venv/
 .venv-wsl/
+.worktrees/
 .vscode/
 *.egg-info/
 *.log
