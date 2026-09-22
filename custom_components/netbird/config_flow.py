@@ -35,7 +35,7 @@ _TOKEN_SCHEMA = vol.Schema(
 class NetBirdConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle NetBird Cloud configuration."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def _async_validate_token(
         self, token: str

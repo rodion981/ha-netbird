@@ -13,6 +13,7 @@ from homeassistant.exceptions import (
     ConfigEntryNotReady,
 )
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -51,6 +52,24 @@ type NetBirdConfigEntry = ConfigEntry[NetBirdRuntimeData]
 
 async def async_setup(_hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up the NetBird integration package."""
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate useful diagnostics while preserving explicit user choices."""
+    if entry.version > 2:
+        return False
+    if entry.version == 1:
+        registry = er.async_get(hass)
+        promoted_keys = (":last_seen", ":approval_required")
+        for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if (
+                entity.platform == DOMAIN
+                and entity.unique_id.endswith(promoted_keys)
+                and entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+            ):
+                registry.async_update_entity(entity.entity_id, disabled_by=None)
+        hass.config_entries.async_update_entry(entry, version=2)
     return True
 
 

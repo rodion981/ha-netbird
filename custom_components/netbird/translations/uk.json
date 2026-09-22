@@ -56,10 +56,19 @@
     "binary_sensor": {
       "connected": {"name": "З’єднання"},
       "login_expired": {"name": "Термін входу минув"},
-      "approval_required": {"name": "Потрібне схвалення"}
+      "approval_required": {"name": "Потрібне схвалення"},
+      "ssh_enabled": {"name": "SSH увімкнено"},
+      "ephemeral": {"name": "Ефемерний"}
     },
     "sensor": {
       "last_seen": {"name": "Востаннє онлайн"},
+      "ip_address": {"name": "IP-адреса"},
+      "accessible_peers": {"name": "Доступні піри"},
+      "last_login": {"name": "Останній вхід"},
+      "ipv6_address": {"name": "IPv6-адреса"},
+      "hostname": {"name": "Ім’я хоста"},
+      "dns_label": {"name": "DNS-мітка"},
+      "operating_system": {"name": "Операційна система"},
       "peer_count": {"name": "Усього пірів"},
       "connected_peer_count": {"name": "Підключені піри"}
     }

@@ -10,6 +10,7 @@ import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped]
     MockConfigEntry,
 )
@@ -24,12 +25,58 @@ from custom_components.netbird.api import (
     NetBirdTimeoutError,
     NetBirdTransportError,
 )
+from custom_components.netbird import async_migrate_entry
 from custom_components.netbird.const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
 from custom_components.netbird.models import NetBirdAccount, NetBirdSnapshot
 
 ACCOUNT_ID = "account-test-id"
 OLD_TOKEN = "old-test-pat"
 NEW_TOKEN = "new-test-pat"
+
+
+async def test_migrate_v1_enables_only_integration_disabled_promoted_entities(
+    hass: HomeAssistant,
+) -> None:
+    """Migration promotes useful entities without overriding user choice."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_ACCOUNT_ID: ACCOUNT_ID, CONF_API_TOKEN: OLD_TOKEN},
+        unique_id=ACCOUNT_ID,
+        version=1,
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    integration_disabled = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{ACCOUNT_ID}:peer-1:last_seen",
+        config_entry=entry,
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+    )
+    promoted_approval = registry.async_get_or_create(
+        "binary_sensor",
+        DOMAIN,
+        f"{ACCOUNT_ID}:peer-1:approval_required",
+        config_entry=entry,
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+    )
+    user_disabled = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{ACCOUNT_ID}:peer-2:last_seen",
+        config_entry=entry,
+        disabled_by=er.RegistryEntryDisabler.USER,
+    )
+
+    assert await async_migrate_entry(hass, entry)
+
+    assert entry.version == 2
+    assert registry.async_get(integration_disabled.entity_id).disabled_by is None
+    assert registry.async_get(promoted_approval.entity_id).disabled_by is None
+    assert (
+        registry.async_get(user_disabled.entity_id).disabled_by
+        is er.RegistryEntryDisabler.USER
+    )
 
 
 def _snapshot(account_id: str = ACCOUNT_ID) -> NetBirdSnapshot:

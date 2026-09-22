@@ -56,10 +56,19 @@
     "binary_sensor": {
       "connected": {"name": "Connection"},
       "login_expired": {"name": "Login expired"},
-      "approval_required": {"name": "Approval required"}
+      "approval_required": {"name": "Approval required"},
+      "ssh_enabled": {"name": "SSH enabled"},
+      "ephemeral": {"name": "Ephemeral"}
     },
     "sensor": {
       "last_seen": {"name": "Last seen"},
+      "ip_address": {"name": "IP address"},
+      "accessible_peers": {"name": "Accessible peers"},
+      "last_login": {"name": "Last login"},
+      "ipv6_address": {"name": "IPv6 address"},
+      "hostname": {"name": "Hostname"},
+      "dns_label": {"name": "DNS label"},
+      "operating_system": {"name": "Operating system"},
       "peer_count": {"name": "Total peers"},
       "connected_peer_count": {"name": "Connected peers"}
     }
