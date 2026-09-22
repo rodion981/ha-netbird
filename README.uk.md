@@ -6,11 +6,12 @@
 <p align="center">Стан NetBird Cloud у Home Assistant.</p>
 
 <p align="center">
-  <a href="README.md"><img src="https://img.shields.io/badge/lang-English-blue" alt="English"></a>
-  <a href="README.uk.md"><img src="https://img.shields.io/badge/lang-Українська-yellow" alt="Українська"></a>
   <a href="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml"><img src="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="Ліцензія MIT"></a>
 </p>
+
+[English](README.md) | [**Українською**](README.uk.md)
+
 <p align="center">
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Відкрити NetBird у HACS"></a>
 </p>
@@ -48,6 +49,16 @@ NetBird для Home Assistant це незалежна кастомна інте�
 5. Відкрийте **Налаштування > Пристрої та служби > Додати інтеграцію**, виберіть **NetBird** і введіть PAT.
 
 Кнопка відкриває HACS; завантаження та налаштування інтеграції виконуються окремо. Якщо HACS не має доступу до репозиторію, встановіть інтеграцію вручну.
+
+### Приклад dashboard
+
+[Універсальний dashboard NetBird](examples/netbird-dashboard.yaml) знаходить сутності за інтеграцією, доменом і класом пристрою, тому не залежить від створених `entity_id` чи назв peer-пристроїв.
+
+1. Встановіть [Auto Entities](https://github.com/thomasloven/lovelace-auto-entities) через HACS як картку dashboard.
+2. Створіть порожній dashboard у Home Assistant.
+3. Відкрийте **Редактор сирої конфігурації** та вставте YAML із прикладу.
+
+Dashboard показує загальні лічильники, підключення peer-пристроїв, активні проблеми, увімкнену діагностику останньої активності та недоступні сутності. Сутності останньої активності й потреби в схваленні вимкнені за замовчуванням; увімкніть їх у реєстрі сутностей, якщо вони потрібні на dashboard.
 
 ### Вручну та оновлення
 

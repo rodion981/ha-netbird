@@ -6,11 +6,12 @@
 <p align="center">Monitor NetBird Cloud peers from Home Assistant.</p>
 
 <p align="center">
-  <a href="README.md"><img src="https://img.shields.io/badge/lang-English-blue" alt="English"></a>
-  <a href="README.uk.md"><img src="https://img.shields.io/badge/lang-Українська-yellow" alt="Українська"></a>
   <a href="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml"><img src="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
 </p>
+
+[**English**](README.md) | [Українською](README.uk.md)
+
 <p align="center">
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open NetBird in HACS"></a>
 </p>
@@ -48,6 +49,16 @@ Use the HACS button above or:
 5. Open **Settings > Devices & services > Add integration**, select **NetBird**, and enter your PAT.
 
 The button opens HACS; downloading and setting up the integration remain separate steps. If HACS cannot access the repository, install manually.
+
+### Dashboard example
+
+The [universal NetBird dashboard](examples/netbird-dashboard.yaml) discovers entities by integration, domain, and device class, so it does not depend on generated entity IDs or peer names.
+
+1. Install [Auto Entities](https://github.com/thomasloven/lovelace-auto-entities) from HACS as a dashboard card.
+2. Create an empty dashboard in Home Assistant.
+3. Open its **Raw configuration editor** and paste the example YAML.
+
+The dashboard shows account totals, peer connections, active problems, enabled last-seen diagnostics, and unavailable entities. Last-seen and approval-required entities are disabled by default; enable them in the entity registry if you want those sections populated.
 
 ### Manual installation and upgrades
 

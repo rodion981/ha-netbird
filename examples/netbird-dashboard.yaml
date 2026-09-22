@@ -1,0 +1,100 @@
+# Universal NetBird dashboard for Home Assistant.
+# Requires the Auto Entities dashboard card from HACS:
+# https://github.com/thomasloven/lovelace-auto-entities
+#
+# The filters use the integration and device class instead of entity IDs.
+# New NetBird peers therefore appear automatically.
+
+title: NetBird
+views:
+  - title: NetBird
+    path: netbird
+    icon: mdi:vpn
+    cards:
+      - type: custom:auto-entities
+        card:
+          type: glance
+          title: Overview / Огляд
+          columns: 2
+          show_name: true
+          show_state: true
+        filter:
+          include:
+            - integration: netbird
+              domain: sensor
+              not:
+                attributes:
+                  device_class: timestamp
+        sort:
+          method: name
+          ignore_case: true
+
+      - type: custom:auto-entities
+        card:
+          type: entities
+          title: Connections / Підключення
+          show_header_toggle: false
+        filter:
+          include:
+            - integration: netbird
+              domain: binary_sensor
+              attributes:
+                device_class: connectivity
+              options:
+                secondary_info: last-changed
+        sort:
+          method: name
+          ignore_case: true
+
+      - type: custom:auto-entities
+        show_empty: false
+        card:
+          type: entities
+          title: Needs attention / Потребує уваги
+          show_header_toggle: false
+        filter:
+          include:
+            - integration: netbird
+              domain: binary_sensor
+              state: "on"
+              attributes:
+                device_class: problem
+              options:
+                secondary_info: last-changed
+        sort:
+          method: name
+          ignore_case: true
+
+      - type: custom:auto-entities
+        show_empty: false
+        card:
+          type: entities
+          title: Last seen / Востаннє онлайн
+          show_header_toggle: false
+        filter:
+          include:
+            - integration: netbird
+              domain: sensor
+              attributes:
+                device_class: timestamp
+              options:
+                secondary_info: last-changed
+        sort:
+          method: state
+          reverse: true
+
+      - type: custom:auto-entities
+        show_empty: false
+        card:
+          type: entities
+          title: Unavailable / Недоступні
+          show_header_toggle: false
+        filter:
+          include:
+            - integration: netbird
+              state: unavailable
+              options:
+                secondary_info: last-changed
+        sort:
+          method: name
+          ignore_case: true
