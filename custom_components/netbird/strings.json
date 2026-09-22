@@ -46,6 +46,12 @@
     "invalid_response": {"message": "NetBird Cloud returned an invalid account or peer response. Setup will retry."},
     "unknown": {"message": "An unexpected NetBird Cloud error occurred. Setup will retry."}
   },
+  "issues": {
+    "stale_peer_cleanup_blocked": {
+      "title": "Stale NetBird peer cleanup blocked",
+      "description": "Home Assistant kept a stale NetBird peer because its device has registry associations not owned by this integration entry. Review the device and its entities, remove foreign associations only if they are no longer needed, and allow the next successful NetBird refresh to retry cleanup."
+    }
+  },
   "entity": {
     "binary_sensor": {
       "connected": {"name": "Connection"},

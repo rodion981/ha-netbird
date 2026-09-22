@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -41,21 +42,44 @@ ACCOUNT_DESCRIPTIONS = (
 
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     entry: NetBirdConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Create account counts and one peer diagnostic per initial peer."""
+    """Create account counts and diagnostics for newly discovered peers."""
+    coordinator = entry.runtime_data.coordinator
+    known_peer_ids: set[str] = set()
     async_add_entities(
-        [
-            NetBirdAccountSensor(entry, description)
-            for description in ACCOUNT_DESCRIPTIONS
-        ]
-        + [
-            NetBirdPeerLastSeen(entry, peer)
-            for peer in entry.runtime_data.coordinator.data
-        ]
+        NetBirdAccountSensor(entry, description) for description in ACCOUNT_DESCRIPTIONS
     )
+
+    def add_new_peer_entities() -> None:
+        """Add one diagnostic entity for each peer in a successful snapshot."""
+        if not coordinator.last_update_success:
+            return
+
+        registry = er.async_get(hass)
+        account_id = entry.runtime_data.account_id
+        known_peer_ids.intersection_update(
+            peer_id
+            for peer_id in known_peer_ids
+            if registry.async_get_entity_id(
+                "sensor", DOMAIN, f"{account_id}:{peer_id}:last_seen"
+            )
+            is not None
+        )
+
+        entities: list[NetBirdPeerLastSeen] = []
+        for peer in coordinator.data:
+            if peer.id in known_peer_ids:
+                continue
+            known_peer_ids.add(peer.id)
+            entities.append(NetBirdPeerLastSeen(entry, peer))
+        if entities:
+            async_add_entities(entities)
+
+    add_new_peer_entities()
+    entry.async_on_unload(coordinator.async_add_listener(add_new_peer_entities))
 
 
 class NetBirdAccountSensor(CoordinatorEntity[NetBirdPeerCoordinator], SensorEntity):

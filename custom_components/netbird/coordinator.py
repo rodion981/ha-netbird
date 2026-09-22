@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import override
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -59,6 +60,26 @@ class NetBirdPeerCoordinator(DataUpdateCoordinator[tuple[NetBirdPeer, ...]]):
         )
         self._client = client
         self.last_successful_refresh: datetime | None = None
+        self._successful_refresh_listeners: set[
+            Callable[[tuple[NetBirdPeer, ...]], None]
+        ] = set()
+
+    @callback
+    def async_add_successful_refresh_listener(
+        self, update_callback: Callable[[tuple[NetBirdPeer, ...]], None]
+    ) -> Callable[[], None]:
+        """Listen to every successful snapshot, including unchanged data."""
+        self._successful_refresh_listeners.add(update_callback)
+        return lambda: self._successful_refresh_listeners.discard(update_callback)
+
+    @callback
+    @override
+    def _async_refresh_finished(self) -> None:
+        """Publish every completed successful snapshot, including unchanged data."""
+        if not self.last_update_success:
+            return
+        for update_callback in self._successful_refresh_listeners:
+            update_callback(self.data)
 
     @override
     async def _async_update_data(self) -> tuple[NetBirdPeer, ...]:
