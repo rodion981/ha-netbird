@@ -123,10 +123,15 @@ class NetBirdTopologyCoordinator(DataUpdateCoordinator[NetBirdTopologySnapshot])
                 except NetBirdUpdateError:
                     return None
 
-        resource_sections, router_sections = await asyncio.gather(
-            asyncio.gather(*(resources_for(network) for network in networks)),
-            asyncio.gather(*(routers_for(network) for network in networks)),
-        )
+        try:
+            resource_sections, router_sections = await asyncio.gather(
+                asyncio.gather(*(resources_for(network) for network in networks)),
+                asyncio.gather(*(routers_for(network) for network in networks)),
+            )
+        except NetBirdAuthenticationError:
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN, translation_key="invalid_auth"
+            ) from None
         return NetBirdTopologySnapshot(
             networks=tuple(
                 NetBirdNetworkTopology(network, resources, routers)

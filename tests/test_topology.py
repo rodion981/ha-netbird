@@ -5,12 +5,17 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock
 
+import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped]
     MockConfigEntry,
 )
 
-from custom_components.netbird.api import NetBirdTransportError
+from custom_components.netbird.api import (
+    NetBirdAuthenticationError,
+    NetBirdTransportError,
+)
 from custom_components.netbird.const import DOMAIN, TOPOLOGY_REQUEST_CONCURRENCY
 from custom_components.netbird.models import (
     NetBirdNetwork,
@@ -87,3 +92,19 @@ async def test_topology_empty_networks_have_no_nested_requests(
     assert coordinator.data.networks == ()
     client.async_get_network_resources.assert_not_awaited()
     client.async_get_network_routers.assert_not_awaited()
+
+
+async def test_nested_topology_auth_failure_requests_reauthentication(
+    hass: HomeAssistant,
+) -> None:
+    """A 401 from a nested endpoint keeps authentication semantics."""
+    client = AsyncMock()
+    client.async_get_networks.return_value = (NetBirdNetwork("n-1", "Network"),)
+    client.async_get_network_resources.side_effect = NetBirdAuthenticationError("safe")
+    client.async_get_network_routers.return_value = ()
+    coordinator = NetBirdTopologyCoordinator(
+        hass, MockConfigEntry(domain=DOMAIN), client
+    )
+
+    with pytest.raises(ConfigEntryAuthFailed):
+        await coordinator._async_update_data()

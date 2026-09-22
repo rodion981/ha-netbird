@@ -38,6 +38,21 @@ class NetBirdTopologyLifecycle:
             if snapshot is not None
             else set()
         )
+        prefix = f"{self._account_id}:network:"
+        for device in dr.async_entries_for_config_entry(
+            dr.async_get(hass), entry.entry_id
+        ):
+            for domain, identifier in device.identifiers:
+                if domain != DOMAIN or not identifier.startswith(prefix):
+                    continue
+                suffix = identifier[len(prefix) :]
+                if ":resource:" in suffix:
+                    network_id, resource_id = suffix.split(":resource:", 1)
+                    if network_id and resource_id:
+                        self._known_network_ids.add(network_id)
+                        self._known_resources.add((network_id, resource_id))
+                elif suffix:
+                    self._known_network_ids.add(suffix)
         self._network_missing: dict[str, int] = {}
         self._resource_missing: dict[tuple[str, str], int] = {}
 
@@ -123,7 +138,9 @@ class NetBirdTopologyLifecycle:
                 for entity in entity_registry.entities.values()
                 if entity.device_id == device.id
             }
-            if linked != {entity.entity_id for entity in owned}:
+            if linked != {
+                entity.entity_id for entity in owned
+            } or device.config_entries != {self._entry.entry_id}:
                 return False
         for entity in owned:
             entity_registry.async_remove(entity.entity_id)

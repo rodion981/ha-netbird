@@ -195,3 +195,30 @@ async def test_stale_resource_and_network_devices_are_removed(
         )
         is None
     )
+
+
+async def test_foreign_device_association_blocks_topology_cleanup(
+    hass: HomeAssistant, topology_client: MagicMock
+) -> None:
+    """Cleanup preserves a resource device shared with another config entry."""
+    entry = await _setup(hass)
+    devices = dr.async_get(hass)
+    identifier = (DOMAIN, f"{ACCOUNT}:network:network-1:resource:resource-1")
+    resource_device = devices.async_get_device_by_identifier(identifier, entry.entry_id)
+    assert resource_device is not None
+    foreign = MockConfigEntry(domain="test", unique_id="foreign")
+    foreign.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create(
+        "sensor",
+        "test",
+        "foreign-resource-association",
+        config_entry=foreign,
+        device_id=resource_device.id,
+    )
+    topology_client.async_get_networks.return_value = ()
+
+    for _ in range(10):
+        await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert devices.async_get(resource_device.id) is not None
