@@ -59,6 +59,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and versioning rules.
 3. Open **Settings > Devices & services > Add integration**, select **NetBird**,
    and enter a NetBird personal access token.
 
+To rotate a PAT, open the existing NetBird integration entry and choose
+**Reconfigure**. Enter a new PAT for the same NetBird account. Home Assistant
+validates it before replacing the stored token and reloading the entry. Verify
+that the integration recovers before revoking the old PAT. If the old PAT was
+already revoked, use the same manual action; NetBird may return an ambiguous
+HTTP 404, so the integration does not automatically treat every 404 as an
+authentication failure.
+
 HACS validation is intentionally skipped while this repository is private,
 because HACS custom repositories must be public. Enable the HACS CI job only
 after the repository is made public and the required brand assets are available.

@@ -7,7 +7,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_USER
+from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped]
@@ -18,6 +18,7 @@ from custom_components.netbird.api import (
     NetBirdAuthenticationError,
     NetBirdJsonError,
     NetBirdPermissionError,
+    NetBirdResponseError,
     NetBirdSchemaError,
     NetBirdServerError,
     NetBirdTimeoutError,
@@ -259,5 +260,122 @@ async def test_reauth_failure_preserves_entry_and_does_not_reload(
     assert result["errors"] == {"base": expected_error}
     assert NEW_TOKEN not in repr(result["description_placeholders"])
     assert OLD_TOKEN not in repr(result["description_placeholders"])
+    assert entry.data[CONF_API_TOKEN] == OLD_TOKEN
+    schedule_reload.assert_not_called()
+
+
+async def test_reconfigure_replaces_same_account_pat_and_reloads_once(
+    hass: HomeAssistant,
+) -> None:
+    """Test the manual PAT flow keeps the existing account-bound entry."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_ACCOUNT_ID: ACCOUNT_ID, CONF_API_TOKEN: OLD_TOKEN},
+        unique_id=ACCOUNT_ID,
+    )
+    entry.add_to_hass(hass)
+    client_patcher, client_class = _mock_client_result(_snapshot())
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        try:
+            start = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+            )
+            assert entry.supports_reconfigure
+            assert start["type"] is FlowResultType.FORM
+            assert start["step_id"] == "reconfigure"
+            assert start["data_schema"] is not None
+            assert (
+                next(iter(start["data_schema"].schema.values())).config["type"]
+                == "password"
+            )
+            result = await hass.config_entries.flow.async_configure(
+                start["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+            )
+        finally:
+            client_patcher.stop()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == {
+        CONF_ACCOUNT_ID: ACCOUNT_ID,
+        CONF_API_TOKEN: NEW_TOKEN,
+    }
+    assert hass.config_entries.async_entries(DOMAIN) == [entry]
+    client_class.return_value.async_get_snapshot.assert_awaited_once_with()
+    schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+async def test_reconfigure_rejects_another_account_without_mutation(
+    hass: HomeAssistant,
+) -> None:
+    """Test a replacement PAT cannot silently move the entry to another account."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_ACCOUNT_ID: ACCOUNT_ID, CONF_API_TOKEN: OLD_TOKEN},
+        unique_id=ACCOUNT_ID,
+    )
+    entry.add_to_hass(hass)
+    client_patcher, _ = _mock_client_result(_snapshot("different-account"))
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        try:
+            start = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+            )
+            result = await hass.config_entries.flow.async_configure(
+                start["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+            )
+        finally:
+            client_patcher.stop()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_account_mismatch"
+    assert entry.data[CONF_API_TOKEN] == OLD_TOKEN
+    schedule_reload.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("failure", "expected_error"),
+    [
+        (NetBirdAuthenticationError("safe"), "invalid_auth"),
+        (NetBirdPermissionError("safe"), "insufficient_permissions"),
+        (NetBirdTimeoutError("safe"), "cannot_connect"),
+        (NetBirdResponseError(404), "cannot_connect"),
+        (NetBirdJsonError("safe"), "invalid_response"),
+        (RuntimeError(NEW_TOKEN), "unknown"),
+    ],
+)
+async def test_reconfigure_failure_preserves_pat_and_does_not_reload(
+    hass: HomeAssistant,
+    caplog: Any,
+    failure: Exception,
+    expected_error: str,
+) -> None:
+    """Test all validation errors keep the previous PAT and remain secret-safe."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_ACCOUNT_ID: ACCOUNT_ID, CONF_API_TOKEN: OLD_TOKEN},
+        unique_id=ACCOUNT_ID,
+    )
+    entry.add_to_hass(hass)
+    client_patcher, _ = _mock_client_result(failure)
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        try:
+            start = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+            )
+            result = await hass.config_entries.flow.async_configure(
+                start["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+            )
+        finally:
+            client_patcher.stop()
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {"base": expected_error}
+    assert NEW_TOKEN not in caplog.text
+    assert NEW_TOKEN not in repr(result)
     assert entry.data[CONF_API_TOKEN] == OLD_TOKEN
     schedule_reload.assert_not_called()

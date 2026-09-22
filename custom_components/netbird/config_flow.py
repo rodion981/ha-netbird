@@ -115,3 +115,28 @@ class NetBirdConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="reauth_confirm", data_schema=_TOKEN_SCHEMA, errors=errors
         )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Allow an existing account to replace its PAT manually."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            token = user_input[CONF_API_TOKEN]
+            snapshot, error = await self._async_validate_token(token)
+            if error is None:
+                assert snapshot is not None
+                await self.async_set_unique_id(snapshot.account.id)
+                self._abort_if_unique_id_mismatch(reason="reconfigure_account_mismatch")
+                return self.async_update_reload_and_abort(
+                    self._get_reconfigure_entry(),
+                    data_updates={
+                        CONF_ACCOUNT_ID: snapshot.account.id,
+                        CONF_API_TOKEN: token,
+                    },
+                )
+            errors["base"] = error
+
+        return self.async_show_form(
+            step_id="reconfigure", data_schema=_TOKEN_SCHEMA, errors=errors
+        )

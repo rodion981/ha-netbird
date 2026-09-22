@@ -15,6 +15,13 @@
         "data": {
           "api_token": "Personal access token"
         }
+      },
+      "reconfigure": {
+        "title": "Replace NetBird access token",
+        "description": "Enter a new personal access token for the same NetBird account.",
+        "data": {
+          "api_token": "Personal access token"
+        }
       }
     },
     "error": {
@@ -27,7 +34,9 @@
     "abort": {
       "already_configured": "This NetBird account is already configured.",
       "reauth_account_mismatch": "The personal access token belongs to a different NetBird account.",
-      "reauth_successful": "NetBird authentication was updated successfully."
+      "reauth_successful": "NetBird authentication was updated successfully.",
+      "reconfigure_account_mismatch": "The personal access token belongs to a different NetBird account.",
+      "reconfigure_successful": "The NetBird access token was updated successfully."
     }
   },
   "exceptions": {

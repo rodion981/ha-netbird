@@ -15,6 +15,13 @@
         "data": {
           "api_token": "Персональний токен доступу"
         }
+      },
+      "reconfigure": {
+        "title": "Замінити токен доступу NetBird",
+        "description": "Введіть новий персональний токен доступу для того самого облікового запису NetBird.",
+        "data": {
+          "api_token": "Персональний токен доступу"
+        }
       }
     },
     "error": {
@@ -27,7 +34,9 @@
     "abort": {
       "already_configured": "Цей обліковий запис NetBird уже налаштовано.",
       "reauth_account_mismatch": "Персональний токен доступу належить іншому обліковому запису NetBird.",
-      "reauth_successful": "Автентифікацію NetBird успішно оновлено."
+      "reauth_successful": "Автентифікацію NetBird успішно оновлено.",
+      "reconfigure_account_mismatch": "Персональний токен доступу належить іншому обліковому запису NetBird.",
+      "reconfigure_successful": "Токен доступу NetBird успішно оновлено."
     }
   },
   "exceptions": {
