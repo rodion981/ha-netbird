@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird для Home Assistant</h1>
-<p align="center">Стан NetBird Cloud у Home Assistant.</p>
+<p align="center">Стан peer-пристроїв і Networks NetBird Cloud у Home Assistant.</p>
 
 <p align="center">
   <a href="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml"><img src="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -16,7 +16,7 @@
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Відкрити NetBird у HACS"></a>
 </p>
 
-NetBird для Home Assistant це незалежна кастомна інтеграція для моніторингу [NetBird Cloud](https://netbird.io/). Вона лише читає API та показує кількість peer-пристроїв і їхній стан. Позначка «підключено» означає зв'язок із Management Service, але **не підтверджує** доступність VPN-з'єднання між двома пристроями.
+NetBird для Home Assistant це незалежна кастомна інтеграція для моніторингу [NetBird Cloud](https://netbird.io/). Вона лише читає Management API та показує стан облікового запису, peer-пристроїв і актуальну топологію Networks, Resources та Routers. Позначка «підключено» означає зв'язок із Management Service, але **не підтверджує** доступність VPN-з'єднання між двома пристроями.
 
 ## Стан проєкту
 
@@ -38,7 +38,7 @@ NetBird для Home Assistant це незалежна кастомна інте�
 
 ## Встановлення
 
-Потрібні Home Assistant `2026.9.3` або новіший і Cloud PAT із доступом до облікового запису та списку peer-пристроїв. Home Assistant постачає власний Python; для розробки потрібен Python `3.14.2` або новіший.
+Потрібні Home Assistant `2026.9.3` або новіший і Cloud PAT із доступом до облікового запису, peer-пристроїв, Networks, Resources та Routers. Home Assistant постачає власний Python; для розробки потрібен Python `3.14.2` або новіший.
 
 ### Через кастомний репозиторій HACS
 
@@ -98,7 +98,7 @@ PAT зберігається в записі інтеграції Home Assistant
 
 ## API та обмеження
 
-Інтеграція читає `GET /api/accounts`, `GET /api/peers`, `GET /api/networks` та endpoint-и `/resources` і `/routers` кожної мережі. Застарілий `/api/routes` не викликається. Обов'язкові ID і поля топології перевіряються; необов'язкові peer-поля можуть бути відсутніми або `null`. Тайм-аут запиту 10 секунд. Після HTTP 429 або серверної помилки інтеграція чекає наступного опитування. NetBird [зазначає, що обробка помилок API ще у стані beta](https://docs.netbird.io/api/guides/errors); звичайний HTTP 404 не означає завершення терміну PAT. Дивіться [довідник API](https://docs.netbird.io/api). Тести використовують анонімізовані дані; README не стверджує, що API перевірено на робочому обліковому записі.
+Інтеграція читає `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources` і `GET /api/networks/{id}/routers` за фіксованою Cloud-адресою. Застарілий `/api/routes` не викликається. Обов'язкові ID і поля топології перевіряються; необов'язкові peer-поля можуть бути відсутніми або `null`. Тайм-аут запиту 10 секунд. Після HTTP 429 або серверної помилки інтеграція чекає наступного опитування. NetBird [зазначає, що обробка помилок API ще у стані beta](https://docs.netbird.io/api/guides/errors); звичайний HTTP 404 не означає завершення терміну PAT. Дивіться [довідник API](https://docs.netbird.io/api). Тести використовують анонімізовані fixtures і mocked responses; hosted CI перевіряє цю реалізацію, але документація не стверджує, що для повного набору endpoint-ів v0.2.0 виконано manual live API contract validation.
 
 ## Розробка та підтримка
 

@@ -1,4 +1,4 @@
-"""Repository metadata and translation contracts for the MVP gate."""
+"""Repository metadata, documentation, and translation contracts."""
 
 from __future__ import annotations
 
@@ -53,6 +53,34 @@ def test_v020_release_metadata_and_documentation() -> None:
         assert "Networks" in text
         assert "Recorder" in text
         assert "1 + 2N" in text
+
+
+def test_v020_documentation_contract_is_current() -> None:
+    """Public documentation describes the complete shipped v0.2.0 contract."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    readme_uk = (ROOT / "README.uk.md").read_text(encoding="utf-8")
+    quality_scale = (ROOT / "docs" / "QUALITY_SCALE.md").read_text(encoding="utf-8")
+    endpoint_paths = (
+        "/api/accounts",
+        "/api/peers",
+        "/api/networks",
+        "/api/networks/{id}/resources",
+        "/api/networks/{id}/routers",
+    )
+
+    for text in (readme, readme_uk, quality_scale):
+        assert "0.2.0" in text
+        assert "1 + 2N" in text
+        assert "live API" in text
+        for endpoint_path in endpoint_paths:
+            assert endpoint_path in text
+
+    assert "Group-based routers" in readme
+    assert "Групові routers" in readme_uk
+    assert "Group-based routers" in quality_scale
+    assert "post-`0.1.0`" not in quality_scale
+    assert "branding" in quality_scale.casefold()
+    assert "HACS" in quality_scale
 
 
 def _assert_translation_shape(reference: Any, translated: Any) -> None:

@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird for Home Assistant</h1>
-<p align="center">Monitor NetBird Cloud peers from Home Assistant.</p>
+<p align="center">Monitor NetBird Cloud peers and Networks from Home Assistant.</p>
 
 <p align="center">
   <a href="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml"><img src="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -16,7 +16,7 @@
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open NetBird in HACS"></a>
 </p>
 
-NetBird for Home Assistant is an independently maintained, read-only custom integration for [NetBird Cloud](https://netbird.io/). It shows account peer counts and peer status from the Management API. A peer marked connected is connected to the Management Service; this does **not** prove end-to-end VPN reachability.
+NetBird for Home Assistant is an independently maintained, read-only custom integration for [NetBird Cloud](https://netbird.io/). It shows account and peer status plus current Networks, Resources, and Routers topology from the Management API. A peer marked connected is connected to the Management Service; this does **not** prove end-to-end VPN reachability.
 
 ## Project status
 
@@ -38,7 +38,7 @@ Only the fixed `https://api.netbird.io` Cloud endpoint is supported. Self-hosted
 
 ## Installation
 
-Requires Home Assistant `2026.9.3` or newer and a Cloud PAT able to read the account and peers. Home Assistant supplies its own Python runtime. Development requires Python `3.14.2` or newer.
+Requires Home Assistant `2026.9.3` or newer and a Cloud PAT able to read the account, peers, Networks, Resources, and Routers. Home Assistant supplies its own Python runtime. Development requires Python `3.14.2` or newer.
 
 ### HACS custom repository
 
@@ -98,7 +98,7 @@ To remove the integration, delete its entry in **Settings > Devices & services >
 
 ## API contract and limits
 
-The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, and each network's `/resources` and `/routers` endpoints at the fixed Cloud endpoint. It never calls deprecated `/api/routes`. Required IDs and topology fields are validated; optional peer fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized data; this README claims no production live validation.
+The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at the fixed Cloud endpoint. It never calls deprecated `/api/routes`. Required IDs and topology fields are validated; optional peer fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized fixtures and mocked responses; hosted CI verifies that implementation, but no manual live API contract validation of the complete v0.2.0 endpoint set is claimed.
 
 ## Development and support
 
