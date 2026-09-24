@@ -15,7 +15,7 @@ from urllib.parse import quote
 API_HOST: Final = "api.netbird.io"
 MAX_RESPONSE_BYTES: Final = 5 * 1024 * 1024
 REQUEST_TIMEOUT_SECONDS: Final = 10
-CONTRACT_REVISION: Final = 2
+CONTRACT_REVISION: Final = 3
 API_CONTRACT_CONTEXT: Final = "unversioned-cloud"
 
 
@@ -88,10 +88,12 @@ def _string_list(value: object, code: str) -> tuple[str, ...]:
 def _validate_group(value: object, code_prefix: str) -> None:
     group = _mapping(value, f"{code_prefix}_ITEM_SCHEMA")
     _required_string(group, "id", f"{code_prefix}_ID_SCHEMA")
-    _required_string(group, "name", f"{code_prefix}_NAME_SCHEMA")
-    _required_int(group, "peers_count", f"{code_prefix}_PEERS_COUNT_SCHEMA")
-    _required_int(group, "resources_count", f"{code_prefix}_RESOURCES_COUNT_SCHEMA")
-    _required_string(group, "issued", f"{code_prefix}_ISSUED_SCHEMA")
+    _optional_fields(
+        group,
+        strings=("name", "issued"),
+        integers=("peers_count", "resources_count"),
+        code=f"{code_prefix}_OPTIONAL_FIELDS_SCHEMA",
+    )
 
 
 def validate_accounts(payload: object) -> None:

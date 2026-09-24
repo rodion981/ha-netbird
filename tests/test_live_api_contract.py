@@ -87,29 +87,40 @@ def test_contract_failures_never_include_live_values() -> None:
             ]
         )
 
-    assert str(error.value) == "PEER_GROUP_PEERS_COUNT_SCHEMA"
+    assert str(error.value) == "PEER_GROUP_OPTIONAL_FIELDS_SCHEMA"
     assert secret_value not in str(error.value)
 
 
-@pytest.mark.parametrize(
-    ("field", "value", "code"),
-    [
-        ("id", None, "PEER_GROUP_ID_SCHEMA"),
-        ("name", None, "PEER_GROUP_NAME_SCHEMA"),
-        ("peers_count", None, "PEER_GROUP_PEERS_COUNT_SCHEMA"),
-        ("resources_count", None, "PEER_GROUP_RESOURCES_COUNT_SCHEMA"),
-        ("issued", None, "PEER_GROUP_ISSUED_SCHEMA"),
-    ],
-)
-def test_group_failures_identify_only_the_contract_field(
-    field: str, value: object, code: str
-) -> None:
-    """Live diagnostics identify a field without exposing its value."""
-    group = {**GROUP, field: value}
+def test_group_id_is_the_only_required_v03_membership_field() -> None:
+    """Only the group ID is required by the planned peer membership model."""
     with pytest.raises(ContractError) as error:
-        validate_peers([{"id": "peer-sentinel", "groups": [group]}])
+        validate_peers([{"id": "peer-sentinel", "groups": [{"id": None}]}])
 
-    assert str(error.value) == code
+    assert str(error.value) == "PEER_GROUP_ID_SCHEMA"
+
+
+def test_documented_group_metadata_is_optional_but_typed() -> None:
+    """Live responses may omit unused metadata without weakening type checks."""
+    assert validate_peers([{"id": "peer-sentinel", "groups": [{"id": "group"}]}]) == 1
+    assert (
+        validate_peers(
+            [
+                {
+                    "id": "peer-sentinel",
+                    "groups": [
+                        {
+                            "id": "group",
+                            "name": None,
+                            "peers_count": None,
+                            "resources_count": None,
+                            "issued": None,
+                        }
+                    ],
+                }
+            ]
+        )
+        == 1
+    )
 
 
 def test_missing_environment_secret_fails_before_any_request(
