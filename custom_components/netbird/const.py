@@ -5,6 +5,7 @@ from typing import Final
 DOMAIN: Final = "netbird"
 
 API_BASE_URL: Final = "https://api.netbird.io"
+DASHBOARD_BASE_URL: Final = "https://app.netbird.io"
 API_TIMEOUT_SECONDS: Final = 10
 PEER_UPDATE_INTERVAL_SECONDS: Final = 60
 TOPOLOGY_UPDATE_INTERVAL_SECONDS: Final = 300

@@ -61,6 +61,8 @@ The [universal NetBird dashboard](examples/netbird-dashboard.yaml) is one native
 
 The dashboard shows account totals, useful peer details, Networks, and network resources. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card.
 
+Home Assistant device pages also link to the matching NetBird Cloud page: `/peers` for the account, `/peer?id=<peer-id>`, `/network?id=<network-id>`, or `/network?id=<network-id>&resource=<resource-id>`. Identifiers are query-encoded independently. These `app.netbird.io` deep links are best effort because dashboard routes are not a stable NetBird API contract. The integration does not infer or support self-hosted dashboard URLs.
+
 ### Manual installation and upgrades
 
 Copy `custom_components/netbird` into the Home Assistant configuration directory as `custom_components/netbird`. Restart Home Assistant and add **NetBird** under **Devices & services**. To upgrade manually, back up your configuration, replace that directory with a chosen version, and restart. For HACS upgrades, use the HACS update flow and restart Home Assistant.

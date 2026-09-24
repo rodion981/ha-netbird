@@ -23,6 +23,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import NetBirdConfigEntry
 from .const import DOMAIN
 from .coordinator import NetBirdPeerCoordinator
+from .dashboard_urls import build_dashboard_url
 from .entity import NetBirdPeerEntity
 from .models import NetBirdPeer, NetBirdResource
 from .topology import NetBirdTopologyCoordinator
@@ -271,6 +272,7 @@ class NetBirdAccountSensor(CoordinatorEntity[NetBirdPeerCoordinator], SensorEnti
             identifiers={(DOMAIN, account_id)},
             manufacturer="NetBird",
             name="NetBird account",
+            configuration_url=build_dashboard_url("account"),
         )
 
     @property
@@ -302,6 +304,7 @@ class NetBirdAccountTopologySensor(
             identifiers={(DOMAIN, account_id)},
             manufacturer="NetBird",
             name="NetBird account",
+            configuration_url=build_dashboard_url("account"),
         )
 
     @property

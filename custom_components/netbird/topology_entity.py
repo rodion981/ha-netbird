@@ -9,6 +9,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NetBirdConfigEntry
 from .const import DOMAIN
+from .dashboard_urls import build_dashboard_url
 from .models import NetBirdResource
 from .topology import NetBirdNetworkTopology, NetBirdTopologyCoordinator
 
@@ -36,6 +37,7 @@ class NetBirdNetworkEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
             manufacturer="NetBird",
             name=item.network.name if item is not None else network_id,
             via_device_id=via_device_id,
+            configuration_url=build_dashboard_url("network", network_id=network_id),
         )
 
     @property
@@ -79,6 +81,9 @@ class NetBirdResourceEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
             manufacturer="NetBird",
             name=resource.name,
             via_device_id=via_device_id,
+            configuration_url=build_dashboard_url(
+                "resource", network_id=network_id, resource_id=resource.id
+            ),
         )
 
     @property

@@ -130,6 +130,14 @@ async def test_account_network_and_resource_entities(
     assert network_device is not None
     assert resource_device is not None
     assert resource_device.via_device_id == network_device.id
+    assert (
+        network_device.configuration_url
+        == "https://app.netbird.io/network?id=network-1"
+    )
+    assert (
+        resource_device.configuration_url
+        == "https://app.netbird.io/network?id=network-1&resource=resource-1"
+    )
 
 
 async def test_partial_resource_failure_is_not_reported_as_zero(

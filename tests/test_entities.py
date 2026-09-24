@@ -127,9 +127,15 @@ async def test_initial_devices_entities_and_single_request(
     assert device.manufacturer == "NetBird"
     assert device.name == "Test peer"
     assert device.sw_version == "0.0-test"
+    assert device.configuration_url == "https://app.netbird.io/peer?id=peer-1"
     assert devices.async_get_device_by_identifier(
         (DOMAIN, f"{ACCOUNT}:peer-2"), entry.entry_id
     )
+    account_device = devices.async_get_device_by_identifier(
+        (DOMAIN, ACCOUNT), entry.entry_id
+    )
+    assert account_device is not None
+    assert account_device.configuration_url == "https://app.netbird.io/peers"
 
     connected = _entity(hass, "peer-1", "connected")
     expired = _entity(hass, "peer-1", "login_expired")

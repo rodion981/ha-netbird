@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import NetBirdConfigEntry
 from .const import DOMAIN
 from .coordinator import NetBirdPeerCoordinator
+from .dashboard_urls import build_dashboard_url
 from .models import NetBirdPeer
 
 
@@ -30,6 +31,7 @@ class NetBirdPeerEntity(CoordinatorEntity[NetBirdPeerCoordinator]):
             manufacturer="NetBird",
             name=peer.name or peer.id,
             sw_version=peer.version,
+            configuration_url=build_dashboard_url("peer", peer_id=peer.id),
         )
 
     @property
