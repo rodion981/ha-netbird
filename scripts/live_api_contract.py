@@ -15,7 +15,7 @@ from urllib.parse import quote
 API_HOST: Final = "api.netbird.io"
 MAX_RESPONSE_BYTES: Final = 5 * 1024 * 1024
 REQUEST_TIMEOUT_SECONDS: Final = 10
-CONTRACT_REVISION: Final = 1
+CONTRACT_REVISION: Final = 2
 API_CONTRACT_CONTEXT: Final = "unversioned-cloud"
 
 
@@ -85,13 +85,13 @@ def _string_list(value: object, code: str) -> tuple[str, ...]:
     return tuple(cast(str, item) for item in values)
 
 
-def _validate_group(value: object, code: str) -> None:
-    group = _mapping(value, code)
-    _required_string(group, "id", code)
-    _required_string(group, "name", code)
-    _required_int(group, "peers_count", code)
-    _required_int(group, "resources_count", code)
-    _required_string(group, "issued", code)
+def _validate_group(value: object, code_prefix: str) -> None:
+    group = _mapping(value, f"{code_prefix}_ITEM_SCHEMA")
+    _required_string(group, "id", f"{code_prefix}_ID_SCHEMA")
+    _required_string(group, "name", f"{code_prefix}_NAME_SCHEMA")
+    _required_int(group, "peers_count", f"{code_prefix}_PEERS_COUNT_SCHEMA")
+    _required_int(group, "resources_count", f"{code_prefix}_RESOURCES_COUNT_SCHEMA")
+    _required_string(group, "issued", f"{code_prefix}_ISSUED_SCHEMA")
 
 
 def validate_accounts(payload: object) -> None:
@@ -143,9 +143,9 @@ def validate_peers(payload: object) -> int:
             integers=("geoname_id", "accessible_peers_count"),
             code="PEERS_SCHEMA",
         )
-        groups = _items(peer.get("groups"), "PEER_GROUP_SCHEMA")
+        groups = _items(peer.get("groups"), "PEER_GROUP_LIST_SCHEMA")
         for group in groups:
-            _validate_group(group, "PEER_GROUP_SCHEMA")
+            _validate_group(group, "PEER_GROUP")
         group_references += len(groups)
         labels = peer.get("extra_dns_labels")
         if labels is not None:
@@ -181,8 +181,8 @@ def validate_resources(payload: object) -> int:
             _required_string(resource, field, "RESOURCES_SCHEMA")
         _optional_fields(resource, strings=("description",), code="RESOURCES_SCHEMA")
         _required_bool(resource, "enabled", "RESOURCES_SCHEMA")
-        for group in _items(resource.get("groups"), "RESOURCE_GROUP_SCHEMA"):
-            _validate_group(group, "RESOURCE_GROUP_SCHEMA")
+        for group in _items(resource.get("groups"), "RESOURCE_GROUP_LIST_SCHEMA"):
+            _validate_group(group, "RESOURCE_GROUP")
     return len(resources)
 
 

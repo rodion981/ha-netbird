@@ -87,8 +87,29 @@ def test_contract_failures_never_include_live_values() -> None:
             ]
         )
 
-    assert str(error.value) == "PEER_GROUP_SCHEMA"
+    assert str(error.value) == "PEER_GROUP_PEERS_COUNT_SCHEMA"
     assert secret_value not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "code"),
+    [
+        ("id", None, "PEER_GROUP_ID_SCHEMA"),
+        ("name", None, "PEER_GROUP_NAME_SCHEMA"),
+        ("peers_count", None, "PEER_GROUP_PEERS_COUNT_SCHEMA"),
+        ("resources_count", None, "PEER_GROUP_RESOURCES_COUNT_SCHEMA"),
+        ("issued", None, "PEER_GROUP_ISSUED_SCHEMA"),
+    ],
+)
+def test_group_failures_identify_only_the_contract_field(
+    field: str, value: object, code: str
+) -> None:
+    """Live diagnostics identify a field without exposing its value."""
+    group = {**GROUP, field: value}
+    with pytest.raises(ContractError) as error:
+        validate_peers([{"id": "peer-sentinel", "groups": [group]}])
+
+    assert str(error.value) == code
 
 
 def test_missing_environment_secret_fails_before_any_request(
