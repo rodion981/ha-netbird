@@ -1,0 +1,31 @@
+name: Live API contract
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: netbird-live-api-contract
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate read-only Cloud shapes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: netbird-live-contract
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.14.2"
+      - name: Validate live contract
+        env:
+          NETBIRD_LIVE_API_TOKEN: ${{ secrets.NETBIRD_LIVE_API_TOKEN }}
+        run: python scripts/live_api_contract.py
