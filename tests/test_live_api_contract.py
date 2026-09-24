@@ -123,6 +123,28 @@ def test_documented_group_metadata_is_optional_but_typed() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("present", "peer_groups"),
+    [(False, None), (True, None)],
+    ids=("absent", "null"),
+)
+def test_optional_router_peer_groups_can_be_null_or_absent(
+    present: bool, peer_groups: object
+) -> None:
+    """Concrete-peer routers need not include group references."""
+    router = {
+        "id": "router-sentinel",
+        "peer": "peer-sentinel",
+        "metric": 100,
+        "masquerade": True,
+        "enabled": True,
+    }
+    if present:
+        router["peer_groups"] = peer_groups
+
+    assert validate_routers([router]) == (1, 0)
+
+
 def test_missing_environment_secret_fails_before_any_request(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -15,7 +15,7 @@ from urllib.parse import quote
 API_HOST: Final = "api.netbird.io"
 MAX_RESPONSE_BYTES: Final = 5 * 1024 * 1024
 REQUEST_TIMEOUT_SECONDS: Final = 10
-CONTRACT_REVISION: Final = 3
+CONTRACT_REVISION: Final = 4
 API_CONTRACT_CONTEXT: Final = "unversioned-cloud"
 
 
@@ -196,7 +196,12 @@ def validate_routers(payload: object) -> tuple[int, int]:
         router = _mapping(value, "ROUTERS_SCHEMA")
         _required_string(router, "id", "ROUTERS_SCHEMA")
         _optional_fields(router, strings=("peer",), code="ROUTERS_SCHEMA")
-        peer_groups = _string_list(router.get("peer_groups"), "ROUTER_GROUP_SCHEMA")
+        raw_peer_groups = router.get("peer_groups")
+        peer_groups = (
+            ()
+            if raw_peer_groups is None
+            else _string_list(raw_peer_groups, "ROUTER_GROUP_SCHEMA")
+        )
         _required_int(router, "metric", "ROUTERS_SCHEMA")
         _required_bool(router, "masquerade", "ROUTERS_SCHEMA")
         _required_bool(router, "enabled", "ROUTERS_SCHEMA")
