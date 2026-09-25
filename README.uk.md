@@ -3,6 +3,7 @@
 </p>
 
 <h1 align="center">NetBird для Home Assistant</h1>
+<!-- netbird-doc-contract: {"release":"0.2.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"unsupported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Стан peer-пристроїв і Networks NetBird Cloud у Home Assistant.</p>
 
 <p align="center">
@@ -20,7 +21,7 @@ NetBird для Home Assistant це незалежна кастомна інте�
 
 ## Стан проєкту
 
-Версія `0.2.0` додає корисну діагностику peer-пристроїв і актуальну топологію NetBird Networks. Встановлюйте її через кастомний репозиторій HACS або вручну. Кнопка HACS відкриває цей репозиторій; вона не означає, що інтеграція є в стандартному каталозі HACS.
+[Версія `0.2.0`](https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0) додає корисну діагностику peer-пристроїв і актуальну топологію NetBird Networks. Встановлюйте її через кастомний репозиторій HACS або вручну. Кнопка HACS відкриває цей репозиторій; вона не означає, що інтеграція є в стандартному каталозі HACS.
 
 ## Можливості
 
@@ -100,7 +101,7 @@ PAT зберігається в записі інтеграції Home Assistant
 
 ## API та обмеження
 
-Інтеграція читає `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources` і `GET /api/networks/{id}/routers` за фіксованою Cloud-адресою. Застарілий `/api/routes` не викликається. Обов'язкові ID і поля топології перевіряються; необов'язкові peer-поля можуть бути відсутніми або `null`. Тайм-аут запиту 10 секунд. Після HTTP 429 або серверної помилки інтеграція чекає наступного опитування. NetBird [зазначає, що обробка помилок API ще у стані beta](https://docs.netbird.io/api/guides/errors); звичайний HTTP 404 не означає завершення терміну PAT. Дивіться [довідник API](https://docs.netbird.io/api). Тести використовують анонімізовані fixtures і mocked responses; hosted CI перевіряє цю реалізацію, але документація не стверджує, що для повного набору endpoint-ів v0.2.0 виконано manual live API contract validation.
+Інтеграція читає `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources` і `GET /api/networks/{id}/routers` за фіксованою Cloud-адресою. Застарілий `/api/routes` не викликається. Обов'язкові ID і поля топології перевіряються; необов'язкові peer-поля можуть бути відсутніми або `null`. Тайм-аут запиту 10 секунд. Після HTTP 429 або серверної помилки інтеграція чекає наступного опитування. NetBird [зазначає, що обробка помилок API ще у стані beta](https://docs.netbird.io/api/guides/errors); звичайний HTTP 404 не означає завершення терміну PAT. Дивіться [довідник API](https://docs.netbird.io/api). Репозиторні тести використовують анонімізовані fixtures і mocked responses, а hosted CI перевіряє цю реалізацію. Захищений [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) 25 вересня 2026 року підтвердив повний набір endpoint-ів v0.2.0 і peer-group shapes. Це точкова перевірка форми API, а не безперервний доказ production-роботи, інсталяції, frontend або VPN-шляху.
 
 ## Розробка та підтримка
 

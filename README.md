@@ -3,6 +3,7 @@
 </p>
 
 <h1 align="center">NetBird for Home Assistant</h1>
+<!-- netbird-doc-contract: {"release":"0.2.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"unsupported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Monitor NetBird Cloud peers and Networks from Home Assistant.</p>
 
 <p align="center">
@@ -20,7 +21,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Project status
 
-Version `0.2.0` adds useful peer diagnostics and current NetBird Networks topology. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
+[Version `0.2.0`](https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0) adds useful peer diagnostics and current NetBird Networks topology. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
 
 ## Features
 
@@ -100,7 +101,7 @@ To remove the integration, delete its entry in **Settings > Devices & services >
 
 ## API contract and limits
 
-The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at the fixed Cloud endpoint. It never calls deprecated `/api/routes`. Required IDs and topology fields are validated; optional peer fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized fixtures and mocked responses; hosted CI verifies that implementation, but no manual live API contract validation of the complete v0.2.0 endpoint set is claimed.
+The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at the fixed Cloud endpoint. It never calls deprecated `/api/routes`. Required IDs and topology fields are validated; optional peer fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized fixtures and mocked responses, while hosted CI verifies that implementation. A protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) validated the complete v0.2.0 endpoint and peer-group shapes on 25 September 2026. That run is point-in-time shape evidence, not continuous production, installation, frontend, or VPN-path evidence.
 
 ## Development and support
 
