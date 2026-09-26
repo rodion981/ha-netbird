@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-09-26
+
+### Added
+
+- Peer group membership from the existing bulk peer response, without an additional groups request.
+- Group-based Network router resolution with concrete and group-derived peers deduplicated.
+- A resource `Routing available` binary sensor that follows both topology and peer updates.
+
+### Changed
+
+- Connected routing peer totals now include peers selected through router groups.
+- Incomplete router, group, peer, or connection data produces an unavailable entity instead of a misleading partial count or false state.
+
+### Limits
+
+- Routing availability reflects enabled resources, enabled routers, resolved routing peers, and their Management Service connection state. It does not test ACLs, DNS, traffic, or end-to-end VPN reachability.
+
 ## [0.2.0] - 2026-09-22
 
 ### Added
@@ -39,3 +56,4 @@ All notable changes to this project are documented here. The project follows [Se
 
 [0.1.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.1.0
 [0.2.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0
+[0.3.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0

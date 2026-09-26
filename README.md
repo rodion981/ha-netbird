@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird for Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"0.2.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"unsupported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"0.3.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Monitor NetBird Cloud peers and Networks from Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Project status
 
-[Version `0.2.0`](https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0) adds useful peer diagnostics and current NetBird Networks topology. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
+[Version `0.3.0`](https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0) adds group-aware routing peer accounting and conservative resource routing availability to the existing peer diagnostics and Networks topology. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
 
 ## Features
 
@@ -31,6 +31,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 - Peer states: connection, last seen, IP address, accessible peers, last login, SSH, ephemeral, login expired, and approval required when supplied by the API.
 - Optional peer diagnostics disabled by default: IPv6 address, hostname, DNS label, and operating system.
 - Current NetBird **Networks**, Resources, and Routers with per-network summaries and resource devices. Deprecated legacy Routes are intentionally excluded.
+- Group-aware Network routing summaries plus a per-resource **Routing available** state that never claims end-to-end reachability.
 - Independent topology polling every five minutes with at most six nested requests in flight. A refresh costs `1 + 2N` API requests for `N` networks.
 - Redacted aggregate diagnostics and a Repair when stale peer cleanup is blocked.
 - English and Ukrainian interface translations.
@@ -78,7 +79,9 @@ Create a replacement PAT for the same account. Open the NetBird entry and choose
 
 The integration polls peers every 60 seconds with one shared coordinator. A separate coordinator polls Networks every 300 seconds. After the network list, Resources and Routers are fetched with a shared concurrency limit of six. A failed nested section affects only that network section; a failed topology refresh does not affect peer states.
 
-Connected routing peers counts only routers linked to a concrete connected peer ID. Group-based routers are excluded because the API does not identify one concrete peer for them, so the value can be zero while group-based routers exist.
+Connected routing peers resolves enabled routers addressed to either a concrete peer or a peer group, deduplicates peers selected through multiple paths, and counts their Management Service connection state. Incomplete router, group, peer, or connection data makes the count unavailable instead of silently lowering it.
+
+Routing available is `on` when an enabled resource has at least one resolved connected routing peer. It is `off` when the resource is disabled, no enabled routers exist, or every fully resolved routing peer is explicitly disconnected. Incomplete information is unavailable unless another complete path already proves `on`. This is routing configuration and Management Service evidence, not an ACL, DNS, traffic, or end-to-end VPN test.
 
 Failed refreshes make coordinator entities unavailable rather than showing stale values as current. A peer absent from a successful list becomes unavailable. A missing optional boolean leaves its sensor unavailable rather than showing `off`. A missing or invalid last seen timestamp produces no value. The connected flag does not test VPN routing, DNS, ACLs, or peer-to-peer traffic.
 
@@ -101,7 +104,7 @@ To remove the integration, delete its entry in **Settings > Devices & services >
 
 ## API contract and limits
 
-The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at the fixed Cloud endpoint. It never calls deprecated `/api/routes`. Required IDs and topology fields are validated; optional peer fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized fixtures and mocked responses, while hosted CI verifies that implementation. A protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) validated the complete v0.2.0 endpoint and peer-group shapes on 25 September 2026. That run is point-in-time shape evidence, not continuous production, installation, frontend, or VPN-path evidence.
+The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at the fixed Cloud endpoint. It never calls deprecated `/api/routes` or adds a groups request. Required IDs and topology fields are validated; optional peer and group fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized fixtures and mocked responses, while hosted CI verifies that implementation. A protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) validated the endpoint and peer-group input shapes used by v0.3.0 on 25 September 2026. That run is point-in-time shape evidence, not evidence of the derived entities, continuous production, installation, frontend, or VPN-path behavior.
 
 ## Development and support
 
