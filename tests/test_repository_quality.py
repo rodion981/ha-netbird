@@ -87,6 +87,7 @@ def test_release_versions_match() -> None:
         pyproject["project"]["version"],
         locked_project["version"],
     }
+    assert f"## [{manifest['version']}]" in _read(ROOT / "CHANGELOG.md")
 
 
 def test_bilingual_readmes_keep_shared_monitoring_contract() -> None:
@@ -103,6 +104,8 @@ def test_bilingual_readmes_keep_shared_monitoring_contract() -> None:
         assert "Networks" in text
         assert "Recorder" in text
         assert "1 + 2N" in text
+    assert "Routing available" in readme
+    assert "Маршрутизація доступна" in readme_uk
 
 
 def test_documentation_endpoint_inventory_is_current() -> None:
@@ -118,7 +121,7 @@ def test_documentation_endpoint_inventory_is_current() -> None:
 def test_documentation_limitations_and_evidence_are_current() -> None:
     """Limitations and evidence classes remain explicit and equivalent."""
     expected = {
-        "group_router_resolution": "unsupported",
+        "group_router_resolution": "supported",
         "evidence": ["mocked-tests", "hosted-ci", "manual-live"],
     }
     for path in DOCUMENTATION_PATHS:
