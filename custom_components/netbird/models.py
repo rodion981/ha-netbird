@@ -45,6 +45,8 @@ class NetBirdPeer:
     extra_dns_labels: tuple[str, ...] = ()
     ephemeral: bool | None = None
     accessible_peers_count: int | None = None
+    group_ids: tuple[str, ...] | None = None
+    groups_present: bool = False
 
 
 @dataclass(frozen=True, slots=True)

@@ -299,8 +299,34 @@ def _optional_string_tuple(data: Mapping[str, Any], field: str) -> tuple[str, ..
     return tuple(value)
 
 
+def _peer_group_ids(
+    data: Mapping[str, Any],
+) -> tuple[bool, tuple[str, ...] | None]:
+    """Preserve absent, null, empty, and populated peer group states."""
+    if "groups" not in data:
+        return False, None
+
+    value = data["groups"]
+    if value is None:
+        return True, None
+    if not isinstance(value, list):
+        raise NetBirdSchemaError(
+            "NetBird peer groups must be a list of objects or null"
+        )
+
+    group_ids = tuple(
+        _required_identifier(
+            _require_mapping(group, f"peer group[{index}]"),
+            f"peer group[{index}]",
+        )
+        for index, group in enumerate(value)
+    )
+    return True, group_ids
+
+
 def _parse_peer(data: Mapping[str, Any]) -> NetBirdPeer:
     """Normalize one peer while tolerating omitted optional fields."""
+    groups_present, group_ids = _peer_group_ids(data)
     return NetBirdPeer(
         id=_required_identifier(data, "peer"),
         name=_optional_string(data, "name"),
@@ -332,6 +358,8 @@ def _parse_peer(data: Mapping[str, Any]) -> NetBirdPeer:
         extra_dns_labels=_optional_string_tuple(data, "extra_dns_labels"),
         ephemeral=_optional_bool(data, "ephemeral"),
         accessible_peers_count=_optional_int(data, "accessible_peers_count"),
+        group_ids=group_ids,
+        groups_present=groups_present,
     )
 
 
