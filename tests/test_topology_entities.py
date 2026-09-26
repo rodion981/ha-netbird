@@ -119,6 +119,17 @@ async def test_account_network_and_resource_entities(
         )
         == "on"
     )
+    assert (
+        _state(
+            hass,
+            _entity_id(
+                hass,
+                "binary_sensor",
+                f"{ACCOUNT}:network:network-1:resource:resource-1:routing_available",
+            ),
+        )
+        == "on"
+    )
 
     devices = dr.async_get(hass)
     network_device = devices.async_get_device_by_identifier(
@@ -243,6 +254,83 @@ async def test_incomplete_connected_routing_count_is_unavailable(
         )
         == STATE_UNAVAILABLE
     )
+
+
+async def test_resource_routing_availability_reacts_to_both_coordinators(
+    hass: HomeAssistant, topology_client: MagicMock
+) -> None:
+    """Routing availability follows peer state and resource/router topology."""
+    group_router = NetBirdRouter(
+        "router-2", "network-1", True, peer_group_ids=("group-1",)
+    )
+    topology_client.async_get_peers.return_value = (
+        NetBirdPeer(
+            "peer-1", connected=True, group_ids=("group-1",), groups_present=True
+        ),
+    )
+    topology_client.async_get_network_routers.return_value = (group_router,)
+    entry = await _setup(hass)
+    entity_id = _entity_id(
+        hass,
+        "binary_sensor",
+        f"{ACCOUNT}:network:network-1:resource:resource-1:routing_available",
+    )
+
+    assert _state(hass, entity_id) == "on"
+
+    topology_client.async_get_peers.return_value = (
+        NetBirdPeer(
+            "peer-1", connected=False, group_ids=("group-1",), groups_present=True
+        ),
+    )
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _state(hass, entity_id) == "off"
+
+    topology_client.async_get_peers.return_value = (
+        NetBirdPeer(
+            "peer-1", connected=None, group_ids=("group-1",), groups_present=True
+        ),
+    )
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _state(hass, entity_id) == STATE_UNAVAILABLE
+
+    topology_client.async_get_network_resources.return_value = (
+        NetBirdResource(
+            "resource-1",
+            "network-1",
+            "Home subnet",
+            "192.0.2.0/24",
+            "subnet",
+            False,
+        ),
+    )
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _state(hass, entity_id) == "off"
+
+
+async def test_resource_routing_availability_handles_router_sections(
+    hass: HomeAssistant, topology_client: MagicMock
+) -> None:
+    """No routers is false while a failed router section is unavailable."""
+    topology_client.async_get_network_routers.return_value = ()
+    entry = await _setup(hass)
+    entity_id = _entity_id(
+        hass,
+        "binary_sensor",
+        f"{ACCOUNT}:network:network-1:resource:resource-1:routing_available",
+    )
+
+    assert _state(hass, entity_id) == "off"
+
+    topology_client.async_get_network_routers.side_effect = NetBirdTransportError(
+        "safe"
+    )
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _state(hass, entity_id) == STATE_UNAVAILABLE
 
 
 async def test_stale_resource_and_network_devices_are_removed(

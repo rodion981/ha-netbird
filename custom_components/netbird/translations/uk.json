@@ -59,7 +59,8 @@
       "approval_required": {"name": "Потрібне схвалення"},
       "ssh_enabled": {"name": "SSH увімкнено"},
       "ephemeral": {"name": "Ефемерний"},
-      "resource_enabled": {"name": "Увімкнено"}
+      "resource_enabled": {"name": "Увімкнено"},
+      "resource_routing_available": {"name": "Маршрутизація доступна"}
     },
     "sensor": {
       "last_seen": {"name": "Востаннє онлайн"},

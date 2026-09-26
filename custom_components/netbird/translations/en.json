@@ -59,7 +59,8 @@
       "approval_required": {"name": "Approval required"},
       "ssh_enabled": {"name": "SSH enabled"},
       "ephemeral": {"name": "Ephemeral"},
-      "resource_enabled": {"name": "Enabled"}
+      "resource_enabled": {"name": "Enabled"},
+      "resource_routing_available": {"name": "Routing available"}
     },
     "sensor": {
       "last_seen": {"name": "Last seen"},

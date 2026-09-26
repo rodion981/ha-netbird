@@ -20,6 +20,7 @@ from . import NetBirdConfigEntry
 from .const import DOMAIN
 from .entity import NetBirdPeerEntity
 from .models import NetBirdPeer, NetBirdResource
+from .routing import resource_routing_available
 from .topology_entity import NetBirdResourceEntity
 
 PARALLEL_UPDATES = 0
@@ -109,7 +110,7 @@ async def async_setup_entry(
     entry.async_on_unload(coordinator.async_add_listener(add_new_entities))
 
     topology = entry.runtime_data.topology_coordinator
-    known_resources: set[str] = set()
+    known_resource_entities: set[str] = set()
     device_registry = dr.async_get(hass)
     account_device = device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
@@ -122,13 +123,16 @@ async def async_setup_entry(
         if not topology.last_update_success or topology.data is None:
             return
         registry = er.async_get(hass)
-        known_resources.intersection_update(
+        known_resource_entities.intersection_update(
             unique_id
-            for unique_id in known_resources
+            for unique_id in known_resource_entities
             if registry.async_get_entity_id("binary_sensor", DOMAIN, unique_id)
             is not None
         )
-        entities: list[NetBirdResourceEnabledBinarySensor] = []
+        entities: list[
+            NetBirdResourceEnabledBinarySensor
+            | NetBirdResourceRoutingAvailableBinarySensor
+        ] = []
         for item in topology.data.networks:
             network_device = device_registry.async_get_or_create(
                 config_entry_id=entry.entry_id,
@@ -143,18 +147,29 @@ async def async_setup_entry(
                 via_device_id=account_device.id,
             )
             for resource in item.resources or ():
-                unique_id = (
+                enabled_unique_id = (
                     f"{entry.runtime_data.account_id}:network:{item.network.id}:"
                     f"resource:{resource.id}:enabled"
                 )
-                if unique_id in known_resources:
-                    continue
-                known_resources.add(unique_id)
-                entities.append(
-                    NetBirdResourceEnabledBinarySensor(
-                        entry, item.network.id, resource, network_device.id
+                if enabled_unique_id not in known_resource_entities:
+                    known_resource_entities.add(enabled_unique_id)
+                    entities.append(
+                        NetBirdResourceEnabledBinarySensor(
+                            entry, item.network.id, resource, network_device.id
+                        )
                     )
+
+                routing_unique_id = (
+                    f"{entry.runtime_data.account_id}:network:{item.network.id}:"
+                    f"resource:{resource.id}:routing_available"
                 )
+                if routing_unique_id not in known_resource_entities:
+                    known_resource_entities.add(routing_unique_id)
+                    entities.append(
+                        NetBirdResourceRoutingAvailableBinarySensor(
+                            entry, item.network.id, resource, network_device.id
+                        )
+                    )
         if entities:
             async_add_entities(entities)
 
@@ -215,3 +230,57 @@ class NetBirdResourceEnabledBinarySensor(NetBirdResourceEntity, BinarySensorEnti
     def is_on(self) -> bool | None:
         resource = self.resource
         return resource.enabled if resource is not None else None
+
+
+class NetBirdResourceRoutingAvailableBinarySensor(
+    NetBirdResourceEntity, BinarySensorEntity
+):
+    """Whether one resource currently has a known connected routing peer."""
+
+    _attr_translation_key = "resource_routing_available"
+
+    def __init__(
+        self,
+        entry: NetBirdConfigEntry,
+        network_id: str,
+        resource: NetBirdResource,
+        via_device_id: str,
+    ) -> None:
+        super().__init__(
+            entry, network_id, resource, "routing_available", via_device_id
+        )
+        self._peer_coordinator = entry.runtime_data.coordinator
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._peer_coordinator.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    @override
+    def available(self) -> bool:
+        return super().available and self._routing_available() is not None
+
+    @property
+    @override
+    def is_on(self) -> bool | None:
+        return self._routing_available()
+
+    def _routing_available(self) -> bool | None:
+        resource = self.resource
+        snapshot = self.coordinator.data
+        if resource is None or snapshot is None:
+            return None
+        network = next(
+            (item for item in snapshot.networks if item.network.id == self._network_id),
+            None,
+        )
+        if network is None:
+            return None
+        peers = (
+            self._peer_coordinator.data
+            if self._peer_coordinator.last_update_success
+            else None
+        )
+        return resource_routing_available(resource.enabled, network.routers, peers)
