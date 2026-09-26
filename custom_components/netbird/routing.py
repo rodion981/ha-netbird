@@ -87,3 +87,26 @@ def count_connected_routing_peers(
     if any(state is None for state in states):
         return None
     return sum(state is True for state in states)
+
+
+def resource_routing_available(
+    resource_enabled: bool,
+    routers: tuple[NetBirdRouter, ...] | None,
+    peers: tuple[NetBirdPeer, ...] | None,
+) -> bool | None:
+    """Return truthful routing availability without claiming reachability."""
+    if not resource_enabled:
+        return False
+
+    resolution = resolve_routing_peer_ids(routers, peers)
+    if not resolution.peer_ids:
+        return False if resolution.complete else None
+
+    assert peers is not None
+    peers_by_id = {peer.id: peer for peer in peers}
+    states = tuple(peers_by_id[peer_id].connected for peer_id in resolution.peer_ids)
+    if any(state is True for state in states):
+        return True
+    if not resolution.complete or any(state is None for state in states):
+        return None
+    return False

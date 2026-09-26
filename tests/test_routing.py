@@ -4,6 +4,7 @@ from custom_components.netbird.models import NetBirdPeer, NetBirdRouter
 from custom_components.netbird.routing import (
     count_connected_routing_peers,
     resolve_routing_peer_ids,
+    resource_routing_available,
 )
 
 
@@ -162,3 +163,50 @@ def test_connected_count_rejects_unknown_connection_state() -> None:
 def test_connected_count_is_zero_without_enabled_routers() -> None:
     """A known empty routing set remains a valid zero without peer data."""
     assert count_connected_routing_peers((), None) == 0
+
+
+def test_routing_available_with_complete_connected_path() -> None:
+    """One known connected peer proves availability despite another incomplete path."""
+    peers = (
+        NetBirdPeer("peer-1", connected=True),
+        NetBirdPeer(
+            "peer-2", connected=False, group_ids=("group-1",), groups_present=True
+        ),
+    )
+    routers = (
+        _router("concrete", peer_id="peer-1"),
+        _router("group", peer_group_ids=("group-1",)),
+    )
+
+    assert resource_routing_available(True, routers, peers) is True
+
+
+def test_routing_unavailable_when_information_is_incomplete() -> None:
+    """Unknown connection and group data cannot become a false state."""
+    unknown_connection = (NetBirdPeer("peer-1", connected=None),)
+    incomplete_group = (NetBirdPeer("peer-1", connected=False),)
+
+    assert (
+        resource_routing_available(
+            True, (_router("concrete", peer_id="peer-1"),), unknown_connection
+        )
+        is None
+    )
+    assert (
+        resource_routing_available(
+            True,
+            (_router("group", peer_group_ids=("group-1",)),),
+            incomplete_group,
+        )
+        is None
+    )
+
+
+def test_routing_false_only_for_complete_negative_results() -> None:
+    """Disabled resources, absent routers, and known disconnected peers are false."""
+    disconnected = (NetBirdPeer("peer-1", connected=False),)
+    concrete = (_router("concrete", peer_id="peer-1"),)
+
+    assert resource_routing_available(False, None, None) is False
+    assert resource_routing_available(True, (), None) is False
+    assert resource_routing_available(True, concrete, disconnected) is False
