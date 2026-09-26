@@ -139,6 +139,8 @@ async def test_anonymized_live_bulk_shape_fixture(load_netbird_fixture: Any) -> 
             login_expired=False,
             approval_required=False,
             ephemeral=False,
+            group_ids=("group-anonymized",),
+            groups_present=True,
         ),
     )
     assert len(session.requests) == 1
@@ -173,6 +175,38 @@ async def test_null_optional_peer_fields_are_normalized() -> None:
     )
 
     assert await client.async_get_peers() == (NetBirdPeer(id="peer"),)
+
+
+@pytest.mark.parametrize(
+    ("peer", "expected_group_ids", "expected_groups_present"),
+    [
+        ({"id": "peer"}, None, False),
+        ({"id": "peer", "groups": None}, None, True),
+        ({"id": "peer", "groups": []}, (), True),
+        (
+            {
+                "id": "peer",
+                "groups": [{"id": "group-1"}, {"id": "group-2"}],
+            },
+            ("group-1", "group-2"),
+            True,
+        ),
+    ],
+    ids=("absent", "null", "empty", "memberships"),
+)
+async def test_peer_group_membership_preserves_source_state(
+    peer: dict[str, object],
+    expected_group_ids: tuple[str, ...] | None,
+    expected_groups_present: bool,
+) -> None:
+    """Bulk peer groups retain absent, null, empty, and populated states."""
+    client, session = make_client(FakeResponse([peer]))
+
+    parsed_peer = (await client.async_get_peers())[0]
+
+    assert parsed_peer.group_ids == expected_group_ids
+    assert parsed_peer.groups_present is expected_groups_present
+    assert len(session.requests) == 1
 
 
 async def test_authentication_error_is_secret_safe(caplog: Any) -> None:
@@ -323,6 +357,9 @@ async def test_invalid_account_schema(payload: Any) -> None:
         [{"id": "peer", "connected": "yes"}],
         [{"id": "peer", "accessible_peers_count": True}],
         [{"id": "peer", "extra_dns_labels": ["valid", 3]}],
+        [{"id": "peer", "groups": "group"}],
+        [{"id": "peer", "groups": [{}]}],
+        [{"id": "peer", "groups": [{"id": None}]}],
     ],
 )
 async def test_invalid_peer_schema(payload: Any) -> None:
