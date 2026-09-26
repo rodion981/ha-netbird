@@ -65,3 +65,25 @@ def resolve_routing_peer_ids(
         peer_ids=frozenset(resolved_peer_ids),
         complete=complete,
     )
+
+
+def count_connected_routing_peers(
+    routers: tuple[NetBirdRouter, ...] | None,
+    peers: tuple[NetBirdPeer, ...] | None,
+) -> int | None:
+    """Count connected routing peers only when the result is authoritative."""
+    resolution = resolve_routing_peer_ids(routers, peers)
+    if not resolution.complete:
+        return None
+    if not resolution.peer_ids:
+        return 0
+
+    assert peers is not None
+    peers_by_id = {peer.id: peer for peer in peers}
+    connection_states = (
+        peers_by_id[peer_id].connected for peer_id in resolution.peer_ids
+    )
+    states = tuple(connection_states)
+    if any(state is None for state in states):
+        return None
+    return sum(state is True for state in states)

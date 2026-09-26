@@ -26,6 +26,7 @@ from .coordinator import NetBirdPeerCoordinator
 from .dashboard_urls import build_dashboard_url
 from .entity import NetBirdPeerEntity
 from .models import NetBirdPeer, NetBirdResource
+from .routing import count_connected_routing_peers
 from .topology import NetBirdTopologyCoordinator
 from .topology_entity import NetBirdNetworkEntity, NetBirdResourceEntity
 
@@ -384,10 +385,19 @@ class NetBirdNetworkSensor(NetBirdNetworkEntity, SensorEntity):
             return item is not None and item.resources is not None
         if item is None or item.routers is None:
             return False
+        if key != "connected_routing_peers":
+            return True
         return (
-            key != "connected_routing_peers"
-            or self._peer_coordinator.last_update_success
+            self._peer_coordinator.last_update_success
+            and self._connected_routing_peer_count() is not None
         )
+
+    def _connected_routing_peer_count(self) -> int | None:
+        """Return an authoritative connected routing peer count."""
+        item = self.network_topology
+        if item is None:
+            return None
+        return count_connected_routing_peers(item.routers, self._peer_coordinator.data)
 
     @property
     @override
@@ -404,16 +414,9 @@ class NetBirdNetworkSensor(NetBirdNetworkEntity, SensorEntity):
             )
         routers = item.routers or ()
         if key == "connected_routing_peers":
-            connected = {
-                peer.id for peer in self._peer_coordinator.data if peer.connected
-            }
-            return len(
-                {
-                    router.peer_id
-                    for router in routers
-                    if router.enabled and router.peer_id in connected
-                }
-            )
+            count = self._connected_routing_peer_count()
+            assert count is not None
+            return count
         return (
             sum(router.enabled for router in routers)
             if key.startswith("enabled")
