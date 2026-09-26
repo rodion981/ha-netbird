@@ -1,7 +1,10 @@
 """Tests for resolving Network routers to concrete NetBird peers."""
 
 from custom_components.netbird.models import NetBirdPeer, NetBirdRouter
-from custom_components.netbird.routing import resolve_routing_peer_ids
+from custom_components.netbird.routing import (
+    count_connected_routing_peers,
+    resolve_routing_peer_ids,
+)
 
 
 def _router(
@@ -109,3 +112,53 @@ def test_enabled_router_without_target_is_incomplete() -> None:
 
     assert resolution.peer_ids == frozenset()
     assert not resolution.complete
+
+
+def test_connected_count_includes_group_peers_and_deduplicates() -> None:
+    """Concrete and group paths count each connected peer once."""
+    peers = (
+        NetBirdPeer(
+            "peer-1", connected=True, group_ids=("group-1",), groups_present=True
+        ),
+        NetBirdPeer(
+            "peer-2", connected=False, group_ids=("group-1",), groups_present=True
+        ),
+    )
+    routers = (
+        _router("concrete", peer_id="peer-1"),
+        _router("group", peer_group_ids=("group-1",)),
+    )
+
+    assert count_connected_routing_peers(routers, peers) == 1
+
+
+def test_connected_count_rejects_incomplete_resolution() -> None:
+    """Missing group membership cannot silently lower the count."""
+    peers = (
+        NetBirdPeer("peer-1", connected=True),
+        NetBirdPeer(
+            "peer-2", connected=True, group_ids=("group-1",), groups_present=True
+        ),
+    )
+
+    assert (
+        count_connected_routing_peers(
+            (_router("group", peer_group_ids=("group-1",)),), peers
+        )
+        is None
+    )
+
+
+def test_connected_count_rejects_unknown_connection_state() -> None:
+    """An unresolved connected flag is unavailable instead of false."""
+    peers = (NetBirdPeer("peer-1", connected=None),)
+
+    assert (
+        count_connected_routing_peers((_router("concrete", peer_id="peer-1"),), peers)
+        is None
+    )
+
+
+def test_connected_count_is_zero_without_enabled_routers() -> None:
+    """A known empty routing set remains a valid zero without peer data."""
+    assert count_connected_routing_peers((), None) == 0

@@ -172,6 +172,79 @@ async def test_partial_resource_failure_is_not_reported_as_zero(
     )
 
 
+async def test_group_router_connected_peers_are_counted_once(
+    hass: HomeAssistant, topology_client: MagicMock
+) -> None:
+    """Group-derived peers participate in the network summary without duplicates."""
+    topology_client.async_get_peers.return_value = (
+        NetBirdPeer(
+            "peer-1", connected=True, group_ids=("group-1",), groups_present=True
+        ),
+        NetBirdPeer(
+            "peer-2", connected=False, group_ids=("group-1",), groups_present=True
+        ),
+    )
+    topology_client.async_get_network_routers.return_value = (
+        ROUTER,
+        NetBirdRouter("router-2", "network-1", True, peer_group_ids=("group-1",)),
+    )
+
+    await _setup(hass)
+
+    assert (
+        _state(
+            hass,
+            _entity_id(
+                hass,
+                "sensor",
+                f"{ACCOUNT}:network:network-1:connected_routing_peers",
+            ),
+        )
+        == "1"
+    )
+
+
+@pytest.mark.parametrize(
+    "peers",
+    [
+        (NetBirdPeer("peer-1", connected=True),),
+        (
+            NetBirdPeer(
+                "peer-1",
+                connected=None,
+                group_ids=("group-1",),
+                groups_present=True,
+            ),
+        ),
+    ],
+    ids=("missing-group-membership", "unknown-connected-state"),
+)
+async def test_incomplete_connected_routing_count_is_unavailable(
+    hass: HomeAssistant,
+    topology_client: MagicMock,
+    peers: tuple[NetBirdPeer, ...],
+) -> None:
+    """Incomplete routing or connection data never appears as a lower count."""
+    topology_client.async_get_peers.return_value = peers
+    topology_client.async_get_network_routers.return_value = (
+        NetBirdRouter("router-2", "network-1", True, peer_group_ids=("group-1",)),
+    )
+
+    await _setup(hass)
+
+    assert (
+        _state(
+            hass,
+            _entity_id(
+                hass,
+                "sensor",
+                f"{ACCOUNT}:network:network-1:connected_routing_peers",
+            ),
+        )
+        == STATE_UNAVAILABLE
+    )
+
+
 async def test_stale_resource_and_network_devices_are_removed(
     hass: HomeAssistant, topology_client: MagicMock
 ) -> None:
