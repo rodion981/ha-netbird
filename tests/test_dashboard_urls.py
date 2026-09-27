@@ -34,3 +34,14 @@ def test_dashboard_urls_reject_missing_or_malformed_identifiers() -> None:
     )
     assert build_dashboard_url("peer", peer_id=" peer ") is None
     assert build_dashboard_url("peer", peer_id="peer\nsecond") is None
+
+
+def test_entry_specific_dashboard_origin_is_optional() -> None:
+    """Self-hosted links use only an explicitly configured dashboard origin."""
+    assert (
+        build_dashboard_url(
+            "peer", base_url="https://dashboard.example", peer_id="peer-1"
+        )
+        == "https://dashboard.example/peer?id=peer-1"
+    )
+    assert build_dashboard_url("account", base_url=None) is None

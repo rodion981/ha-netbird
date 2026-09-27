@@ -26,7 +26,10 @@ async def async_get_config_entry_diagnostics(
 
     return {
         "integration_version": integration.version,
-        "deployment_class": "cloud",
+        "deployment_class": (
+            runtime.deployment_type if runtime is not None else "unknown"
+        ),
+        "custom_ca": runtime.custom_ca if runtime is not None else False,
         "coordinator": {
             "last_update_success": (
                 coordinator.last_update_success if coordinator is not None else False

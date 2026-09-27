@@ -24,8 +24,15 @@ from .api import (
     NetBirdPermissionError,
     NetBirdUpdateError,
 )
-from .const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
+from .const import (
+    CONF_ACCOUNT_ID,
+    CONF_API_TOKEN,
+    CONF_DEPLOYMENT_TYPE,
+    DEPLOYMENT_CLOUD,
+    DOMAIN,
+)
 from .coordinator import NetBirdPeerCoordinator
+from .deployment import NetBirdDeploymentError, async_resolve_deployment
 from .lifecycle import async_setup_peer_lifecycle
 from .models import NetBirdAccount
 from .topology import NetBirdTopologyCoordinator
@@ -43,6 +50,9 @@ class NetBirdRuntimeData:
     coordinator: NetBirdPeerCoordinator
     topology_coordinator: NetBirdTopologyCoordinator
     account: NetBirdAccount
+    deployment_type: str
+    dashboard_url: str | None
+    custom_ca: bool
 
     @property
     def account_id(self) -> str:
@@ -60,7 +70,7 @@ async def async_setup(_hass: HomeAssistant, _config: ConfigType) -> bool:
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate useful diagnostics while preserving explicit user choices."""
-    if entry.version > 2:
+    if entry.version > 3:
         return False
     if entry.version == 1:
         registry = er.async_get(hass)
@@ -73,6 +83,12 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ):
                 registry.async_update_entity(entity.entity_id, disabled_by=None)
         hass.config_entries.async_update_entry(entry, version=2)
+    if entry.version == 2:
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_DEPLOYMENT_TYPE: DEPLOYMENT_CLOUD},
+            version=3,
+        )
     return True
 
 
@@ -89,7 +105,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: NetBirdConfigEntry) -> b
             translation_domain=DOMAIN, translation_key="invalid_auth"
         )
 
-    client = NetBirdApiClient(async_get_clientsession(hass), token)
+    try:
+        deployment = await async_resolve_deployment(hass, entry.data)
+    except NetBirdDeploymentError as err:
+        raise ConfigEntryError("NetBird deployment profile is invalid") from err
+
+    client = NetBirdApiClient(
+        async_get_clientsession(hass),
+        token,
+        base_url=deployment.api_url,
+        ssl_context=deployment.ssl_context,
+    )
     try:
         account = await client.async_get_account()
     except NetBirdAuthenticationError:
@@ -125,6 +151,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: NetBirdConfigEntry) -> b
         coordinator=coordinator,
         topology_coordinator=topology_coordinator,
         account=account,
+        deployment_type=deployment.deployment_type,
+        dashboard_url=deployment.dashboard_url,
+        custom_ca=deployment.custom_ca,
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     async_setup_peer_lifecycle(hass, entry)

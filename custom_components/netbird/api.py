@@ -1,12 +1,20 @@
-"""Async client for the NetBird Cloud API."""
+"""Async client for the NetBird API."""
 
 from __future__ import annotations
 
+import ssl
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, Final
 
-from aiohttp import ClientError, ClientSession, ClientTimeout, ContentTypeError
+from aiohttp import (
+    ClientConnectorCertificateError,
+    ClientConnectorSSLError,
+    ClientError,
+    ClientSession,
+    ClientTimeout,
+    ContentTypeError,
+)
 
 from .const import API_BASE_URL, API_TIMEOUT_SECONDS
 from .models import (
@@ -48,6 +56,10 @@ class NetBirdResponseError(NetBirdUpdateError):
         self.status = status
 
 
+class NetBirdRedirectError(NetBirdResponseError):
+    """A redirect was rejected to avoid forwarding a PAT to another origin."""
+
+
 class NetBirdRateLimitError(NetBirdResponseError):
     """The NetBird API rate limit was reached."""
 
@@ -68,6 +80,10 @@ class NetBirdTimeoutError(NetBirdTransportError):
     """A NetBird API request exceeded its total timeout."""
 
 
+class NetBirdTlsError(NetBirdTransportError):
+    """TLS verification failed while connecting to NetBird."""
+
+
 class NetBirdDataError(NetBirdUpdateError):
     """The NetBird API returned unusable data."""
 
@@ -81,12 +97,21 @@ class NetBirdSchemaError(NetBirdDataError):
 
 
 class NetBirdApiClient:
-    """Read-only async client for NetBird Cloud."""
+    """Read-only async client for NetBird Cloud or a self-hosted server."""
 
-    def __init__(self, session: ClientSession, token: str) -> None:
+    def __init__(
+        self,
+        session: ClientSession,
+        token: str,
+        *,
+        base_url: str = API_BASE_URL,
+        ssl_context: ssl.SSLContext | None = None,
+    ) -> None:
         """Initialize the client with Home Assistant's aiohttp session."""
         self._session = session
         self._token = token
+        self._base_url = base_url
+        self._ssl_context = ssl_context
 
     async def async_get_account(self) -> NetBirdAccount:
         """Return the single account available to the PAT."""
@@ -162,7 +187,11 @@ class NetBirdApiClient:
         }
         try:
             async with self._session.get(
-                f"{API_BASE_URL}{path}", headers=headers, timeout=_TIMEOUT
+                f"{self._base_url}{path}",
+                headers=headers,
+                timeout=_TIMEOUT,
+                allow_redirects=False,
+                ssl=self._ssl_context if self._ssl_context is not None else True,
             ) as response:
                 _raise_for_status(
                     response.status,
@@ -183,6 +212,8 @@ class NetBirdApiClient:
             raise
         except TimeoutError as err:
             raise NetBirdTimeoutError("NetBird API request timed out") from err
+        except (ClientConnectorCertificateError, ClientConnectorSSLError) as err:
+            raise NetBirdTlsError("NetBird API TLS verification failed") from err
         except ClientError as err:
             raise NetBirdTransportError("NetBird API request failed") from err
 
@@ -191,6 +222,8 @@ def _raise_for_status(status: int, retry_after: str | None) -> None:
     """Map an HTTP status without reading or exposing its response body."""
     if 200 <= status < 300:
         return
+    if 300 <= status < 400:
+        raise NetBirdRedirectError(status)
     if status == 401:
         raise NetBirdAuthenticationError("NetBird API authentication failed")
     if status == 403:

@@ -31,7 +31,11 @@ class NetBirdPeerEntity(CoordinatorEntity[NetBirdPeerCoordinator]):
             manufacturer="NetBird",
             name=peer.name or peer.id,
             sw_version=peer.version,
-            configuration_url=build_dashboard_url("peer", peer_id=peer.id),
+            configuration_url=build_dashboard_url(
+                "peer",
+                base_url=entry.runtime_data.dashboard_url,
+                peer_id=peer.id,
+            ),
         )
 
     @property

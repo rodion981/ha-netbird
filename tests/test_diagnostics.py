@@ -81,6 +81,7 @@ async def test_diagnostics_allowlist_and_failure_privacy(hass: HomeAssistant) ->
         assert success == {
             "integration_version": "0.3.0",
             "deployment_class": "cloud",
+            "custom_ca": False,
             "coordinator": {
                 "last_update_success": True,
                 "last_successful_refresh": (

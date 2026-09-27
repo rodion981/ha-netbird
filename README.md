@@ -4,7 +4,7 @@
 
 <h1 align="center">NetBird for Home Assistant</h1>
 <!-- netbird-doc-contract: {"release":"0.3.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
-<p align="center">Monitor NetBird Cloud peers and Networks from Home Assistant.</p>
+<p align="center">Monitor NetBird Cloud or self-hosted peers and Networks from Home Assistant.</p>
 
 <p align="center">
   <a href="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml"><img src="https://github.com/rodion981/ha-netbird/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -17,7 +17,7 @@
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open NetBird in HACS"></a>
 </p>
 
-NetBird for Home Assistant is an independently maintained, read-only custom integration for [NetBird Cloud](https://netbird.io/). It shows account and peer status plus current Networks, Resources, and Routers topology from the Management API. A peer marked connected is connected to the Management Service; this does **not** prove end-to-end VPN reachability.
+NetBird for Home Assistant is an independently maintained, read-only custom integration for [NetBird](https://netbird.io/), using either NetBird Cloud or an explicit self-hosted HTTPS endpoint. It shows account and peer status plus current Networks, Resources, and Routers topology from the Management API. A peer marked connected is connected to the Management Service; this does **not** prove end-to-end VPN reachability.
 
 ## Project status
 
@@ -25,7 +25,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Features
 
-- One Cloud account per configuration entry, authenticated by personal access token (PAT).
+- One Cloud or self-hosted account per configuration entry, authenticated by personal access token (PAT).
 - One coordinated peer list poll every 60 seconds; new peers appear without a reload.
 - Account sensors: peer, network, resource, and router totals.
 - Peer states: connection, last seen, IP address, accessible peers, last login, SSH, ephemeral, login expired, and approval required when supplied by the API.
@@ -36,11 +36,11 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 - Redacted aggregate diagnostics and a Repair when stale peer cleanup is blocked.
 - English and Ukrainian interface translations.
 
-Only the fixed `https://api.netbird.io` Cloud endpoint is supported. Self-hosted endpoints, legacy Routes, write actions, traffic metrics, and VPN path tests are outside this release.
+Cloud uses the fixed `https://api.netbird.io` origin. Self-hosted setup requires an explicit HTTPS API origin, an optional separate HTTPS dashboard origin, and optionally a PEM CA bundle. HTTP, disabled TLS verification, URL path prefixes, redirects, mTLS, discovery, MSP/multi-tenant selection, legacy Routes, write actions, traffic metrics, and VPN path tests are not supported.
 
 ## Installation
 
-Requires Home Assistant `2026.9.3` or newer and a Cloud PAT able to read the account, peers, Networks, Resources, and Routers. Home Assistant supplies its own Python runtime. Development requires Python `3.14.2` or newer.
+Requires Home Assistant `2026.9.3` or newer and a PAT able to read the account, peers, Networks, Resources, and Routers. A self-hosted server must expose the same consumed Management API contract over HTTPS. Home Assistant supplies its own Python runtime. Development requires Python `3.14.2` or newer.
 
 ### HACS custom repository
 
@@ -50,7 +50,7 @@ Use the HACS button above or:
 2. Add `https://github.com/rodion981/ha-netbird` as **Integration**.
 3. Open **NetBird** and select **Download**.
 4. Restart Home Assistant.
-5. Open **Settings > Devices & services > Add integration**, select **NetBird**, and enter your PAT.
+5. Open **Settings > Devices & services > Add integration**, select **NetBird**, choose Cloud or self-hosted, and enter the requested connection data.
 
 The button opens HACS; downloading and setting up the integration remain separate steps. If HACS cannot access the repository, install manually.
 
@@ -63,7 +63,7 @@ The [universal NetBird dashboard](examples/netbird-dashboard.yaml) is one native
 
 The dashboard shows account totals, useful peer details, Networks, and network resources. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card.
 
-Home Assistant device pages also link to the matching NetBird Cloud page: `/peers` for the account, `/peer?id=<peer-id>`, `/network?id=<network-id>`, or `/network?id=<network-id>&resource=<resource-id>`. Identifiers are query-encoded independently. These `app.netbird.io` deep links are best effort because dashboard routes are not a stable NetBird API contract. The integration does not infer or support self-hosted dashboard URLs.
+Home Assistant device pages link to the matching dashboard page only when a dashboard origin is known: `/peers` for the account, `/peer?id=<peer-id>`, `/network?id=<network-id>`, or `/network?id=<network-id>&resource=<resource-id>`. Cloud uses `app.netbird.io`; self-hosted setup uses only the separately entered dashboard origin and never infers it from the API URL. Identifiers are query-encoded independently. These links are best effort because dashboard routes are not a stable NetBird API contract.
 
 ### Manual installation and upgrades
 
@@ -71,9 +71,9 @@ Copy `custom_components/netbird` into the Home Assistant configuration directory
 
 ## Configuration and PAT rotation
 
-Setup validates the PAT against the Cloud account and peer endpoints. The account ID prevents duplicate entries. A PAT for another account cannot replace the existing entry's token.
+Setup validates the PAT and keeps the account ID as the stable identity. Self-hosted setup additionally validates the complete account, peer, network, resource, and router contract before saving. The account ID prevents duplicate entries across deployment types. A PAT for another account cannot replace the existing entry's token.
 
-Create a replacement PAT for the same account. Open the NetBird entry and choose **Reconfigure**. The new PAT is validated before saving and reloading. Confirm recovery, then revoke the old PAT. HTTP 401 starts Home Assistant reauthentication. HTTP 403 means insufficient permissions; a generic HTTP 404 is not treated as proof that the PAT expired.
+Create a replacement PAT for the same account. Reauthentication changes only the PAT. **Reconfigure** rotates a Cloud PAT or atomically replaces the self-hosted API origin, optional dashboard origin, PAT, and CA bundle after full validation. Deployment type cannot be switched in place. Confirm recovery, then revoke the old PAT. HTTP 401 starts Home Assistant reauthentication. HTTP 403 means insufficient permissions; a generic HTTP 404 is not treated as proof that the PAT expired.
 
 ## Data updates and availability
 
@@ -89,14 +89,14 @@ After 10 consecutive **successful** snapshots omit a peer, its integration-owned
 
 ## Privacy and troubleshooting
 
-The PAT is stored in the Home Assistant config entry and sent to NetBird Cloud for API reads. Protect backups and never share the PAT. Enabled peer IP, hostname, DNS label, operating system, and resource address entities are visible to Home Assistant Recorder and may appear in history and backups. The integration adds no separate persistent database. Diagnostics contain only versions, refresh status/error classes, and aggregate counts; never tokens, identities, names, addresses, private URLs, or raw responses. Review any diagnostic export before sharing.
+The PAT and any custom CA bundle are stored in the Home Assistant config entry; the PAT is sent only to the configured API origin for read-only requests. Every request verifies HTTPS, has a 10-second timeout, and refuses redirects while authorization is attached. Protect backups and never share the PAT. Enabled peer IP, hostname, DNS label, operating system, and resource address entities are visible to Home Assistant Recorder and may appear in history and backups. The integration adds no separate persistent database. Diagnostics expose only deployment class, whether a custom CA exists, versions, refresh status/error classes, and aggregate counts; never tokens, identities, names, addresses, URLs, certificates, redirect targets, or raw responses. Review any diagnostic export before sharing.
 
 | Symptom | Check |
 | --- | --- |
 | Authentication failure | Rotate the PAT for the same account through **Reconfigure** or the reauthentication flow. |
 | Permission error | Check PAT account access and permissions; HTTP 403 is not automatically treated as expiry. |
-| Cannot connect or invalid response | Check access to `https://api.netbird.io` and Cloud service status. |
-| Peer unavailable | Check last successful refresh and whether the peer remains in NetBird Cloud. Optional fields can make individual sensors unavailable. |
+| Cannot connect or invalid response | For Cloud, check `https://api.netbird.io` and service status. For self-hosted, check the final HTTPS API origin, DNS, certificate chain, PAT permissions, and required endpoints. Redirects are rejected. |
+| Peer unavailable | Check last successful refresh and whether the peer remains in NetBird. Optional fields can make individual sensors unavailable. |
 | Stale peer remains | Wait for 10 successful missing-peer snapshots; check **Settings > Repairs**. |
 | Connected but traffic fails | Check NetBird clients, routing, DNS, policy, and destination directly. |
 
@@ -104,7 +104,7 @@ To remove the integration, delete its entry in **Settings > Devices & services >
 
 ## API contract and limits
 
-The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at the fixed Cloud endpoint. It never calls deprecated `/api/routes` or adds a groups request. Required IDs and topology fields are validated; optional peer and group fields may be absent or null. Requests have a 10-second timeout. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. See the [API reference](https://docs.netbird.io/api). Repository tests use anonymized fixtures and mocked responses, while hosted CI verifies that implementation. A protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) validated the endpoint and peer-group input shapes used by v0.3.0 on 25 September 2026. That run is point-in-time shape evidence, not evidence of the derived entities, continuous production, installation, frontend, or VPN-path behavior.
+The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at either the fixed Cloud origin or a normalized self-hosted HTTPS origin. It never calls deprecated `/api/routes` or adds a groups request. Self-hosted compatibility is capability-based: setup requires all consumed endpoint shapes instead of guessing support from a server version. Required IDs and topology fields are validated; optional peer and group fields may be absent or null. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. Repository tests use anonymized fixtures and mocked responses. The protected [Cloud live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) from 25 September 2026 is point-in-time Cloud shape evidence only. Self-hosted release evidence must separately record the tested NetBird version, HTTPS deployment style, setup/reload/poll, reauth, reconfigure, redirect/TLS failure, and private-CA result without retaining private values.
 
 ## Development and support
 

@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Explicit NetBird Cloud and self-hosted deployment profiles.
+- Self-hosted HTTPS API and optional dashboard origins with optional PEM CA trust.
+
+### Security
+
+- Authenticated requests reject redirects, keep TLS verification enabled, and never infer an API or dashboard origin.
+
+### Compatibility
+
+- Existing version-2 entries migrate to an explicit Cloud profile without changing account, device, or entity identity.
+- Self-hosted setup validates the complete consumed read-only API contract. Protected live self-hosted validation remains required before release.
+
 ## [0.3.0] - 2026-09-26
 
 ### Added

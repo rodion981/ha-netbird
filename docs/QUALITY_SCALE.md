@@ -1,8 +1,8 @@
-# Cloud integration quality evidence
+# NetBird integration quality evidence
 
 <!-- netbird-doc-contract: {"release":"0.3.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 
-This is the project's evidence checklist for the Cloud-only `0.3.0` implementation. It is **not** a Home Assistant Core quality-tier award. Recheck the [current Home Assistant rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/) before claiming a tier. Evidence below points to repository code, tests, and named hosted runs, not to a production installation.
+This is the project's evidence checklist for the released Cloud `0.3.0` baseline and the ROD-48 self-hosted implementation candidate. It is **not** a Home Assistant Core quality-tier award. Self-hosted support is not release-proven until its protected live gate passes. Recheck the [current Home Assistant rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/) before claiming a tier. Evidence below points to repository code, tests, and named hosted runs, not to a production installation.
 
 ## Reproducible gate
 
@@ -25,6 +25,7 @@ Evidence classes remain separate:
 - Hosted evidence: release publication requires the v0.3.0 tag workflow to pass quality, hassfest, HACS validation, and Gitleaks on the release commit.
 - Release evidence: [v0.3.0](https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0), its tag workflow, the official NetBird brand asset, and the direct HACS custom-repository button form the release evidence.
 - Live API evidence: the protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) passed on 25 September 2026 for the account, peer, network, resource, router, and peer-group input shapes used by v0.3.0. This is point-in-time shape evidence only; it does not verify derived entities or reachability.
+- Self-hosted live evidence: pending. Before publication, record the exact NetBird version and HTTPS deployment style plus setup/reload/poll, same-account reauth and reconfigure, redirect/TLS failure, and private-CA coverage without retaining any private value.
 - Frontend and installation evidence must be recorded separately from automated test results when performed.
 
 ## Implemented rule evidence
@@ -43,13 +44,16 @@ Evidence classes remain separate:
 | Documentation for setup, removal, updates, entities, uses, and limitations | [English README](../README.md), [Ukrainian README](../README.uk.md) |
 | Runtime end-to-end behavior within Home Assistant tests | [test_mvp_integration.py](../tests/test_mvp_integration.py) |
 | Async API with injected Home Assistant web session | [api.py](../custom_components/netbird/api.py), [__init__.py](../custom_components/netbird/__init__.py), [test_api.py](../tests/test_api.py) |
+| Explicit Cloud/self-hosted profiles, HTTPS-origin normalization, private CA verification, fail-closed redirects, and identity-preserving v2-to-v3 migration | [deployment.py](../custom_components/netbird/deployment.py), [config_flow.py](../custom_components/netbird/config_flow.py), [test_deployment.py](../tests/test_deployment.py), [test_config_flow.py](../tests/test_config_flow.py) |
 | Native dynamic dashboard without third-party cards or generated entity IDs | [dashboard example](../examples/netbird-dashboard.yaml), [test_dashboard_example.py](../tests/test_dashboard_example.py) |
 
-Rules about actions, triggers, conditions, local discovery, or push subscriptions are not applicable to this Cloud polling implementation: it exposes none of those features. Branding and HACS custom-repository metadata are included; hassfest, HACS validation, Gitleaks, and the quality gate must pass on the v0.3.0 tag before publication is complete. The integration is not claimed to be listed in the HACS default store. No `quality_scale.yaml` or official tier is claimed for this custom integration. Coverage percentage must come from the command above, not from this checklist.
+Rules about actions, triggers, conditions, local discovery, or push subscriptions are not applicable: the integration exposes none of those features. The manifest uses `local_polling` because one explicit deployment type directly polls a user-managed server; Cloud remains supported. Branding and HACS custom-repository metadata are included; hassfest, HACS validation, Gitleaks, and the quality gate must pass on the release commit before publication is complete. The integration is not claimed to be listed in the HACS default store. No `quality_scale.yaml` or official tier is claimed for this custom integration. Coverage percentage must come from the command above, not from this checklist.
 
-## Cloud API assumptions and limits
+## API assumptions and limits
 
-- Fixed origin: `https://api.netbird.io`. The integration uses `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers`. [NetBird API reference](https://docs.netbird.io/api), [client](../custom_components/netbird/api.py).
+- Cloud uses the fixed `https://api.netbird.io` origin. Self-hosted setup accepts only a normalized HTTPS origin with no credentials, path, query, or fragment. It rejects loopback, unspecified, link-local, multicast, and hostnames resolving to those classes while allowing private LAN addresses. The integration uses `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers`. [NetBird API reference](https://docs.netbird.io/api), [deployment policy](../custom_components/netbird/deployment.py), [client](../custom_components/netbird/api.py).
+- API and dashboard origins are separate. The dashboard origin is optional and never receives the PAT. Every API request verifies TLS, refuses redirects, and uses either the normal trust store or an explicit PEM CA bundle. There is no disabled-verification path, HTTP fallback, mTLS, endpoint discovery, or subpath hosting.
+- Self-hosted compatibility is capability-based. Initial setup and endpoint reconfigure require the complete consumed account, peer, network, resource, and router schemas. No undocumented minimum server version is claimed.
 - The account list has exactly one item for a usable PAT. Peer IDs are required and unique. Optional peer fields may be absent or null. These are **integration parsing requirements**, not guarantees for every NetBird deployment.
 - Invalid optional timestamps become unknown. Malformed required data fails the complete refresh. [Parser](../custom_components/netbird/api.py), [API tests](../tests/test_api.py).
 - The peer coordinator polls every 60 seconds. The separate topology coordinator polls every 300 seconds. After the network list, Resources and Routers use a shared concurrency limit of six; one complete refresh costs `1 + 2N` requests for `N` networks. A failed nested section affects only that network section, and a failed topology refresh does not affect peer states.
@@ -57,4 +61,4 @@ Rules about actions, triggers, conditions, local discovery, or push subscription
 - Routing available is true when an enabled resource has at least one resolved connected routing peer. It is false for a disabled resource, no enabled routers, or a complete set of explicitly disconnected peers. Incomplete data is unavailable unless another complete path already proves true. This is not a reachability claim.
 - NetBird's documented peer `connected` value represents Management Service state. End-to-end VPN access must be checked separately. The integration does not claim pagination, push delivery, rate-limit policy, or undocumented fields.
 - NetBird [describes its API error handling as beta](https://docs.netbird.io/api/guides/errors). An HTTP 404 alone does not establish PAT expiry. Cloud API surfaces may evolve. Anonymized fixtures and mocked responses verify code behavior; the protected [manual live run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) separately established point-in-time input-shape evidence for the v0.3.0 endpoint set. Record future live findings separately with date, API documentation version or URL, anonymized shape, tested scope, and outcome. Never record raw production responses or identifiers.
-- Deprecated legacy Routes, self-hosted endpoints, MSP/multi-tenant setup, write operations, traffic telemetry, and end-to-end VPN path tests are outside v0.3.0.
+- Deprecated legacy Routes, MSP/multi-tenant setup, OAuth, write operations, traffic telemetry, and end-to-end VPN path tests remain outside scope.

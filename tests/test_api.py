@@ -16,6 +16,7 @@ from custom_components.netbird.api import (
     NetBirdJsonError,
     NetBirdPermissionError,
     NetBirdRateLimitError,
+    NetBirdRedirectError,
     NetBirdResponseError,
     NetBirdSchemaError,
     NetBirdServerError,
@@ -120,6 +121,24 @@ async def test_snapshot_success_and_request_contract(
             "Authorization": f"Token {TOKEN}",
         }
         assert kwargs["timeout"] == ClientTimeout(total=API_TIMEOUT_SECONDS)
+        assert kwargs["allow_redirects"] is False
+        assert kwargs["ssl"] is True
+
+
+async def test_custom_api_origin_is_used_without_following_redirects() -> None:
+    """A self-hosted origin is explicit and redirects fail closed."""
+    session = FakeSession(FakeResponse(status=302))
+    client = NetBirdApiClient(
+        cast(ClientSession, session), TOKEN, base_url="https://netbird.example.test"
+    )
+
+    with pytest.raises(NetBirdRedirectError) as error:
+        await client.async_get_account()
+
+    assert error.value.status == 302
+    assert session.requests[0][0] == "https://netbird.example.test/api/accounts"
+    assert session.requests[0][1]["allow_redirects"] is False
+    assert len(session.requests) == 1
 
 
 async def test_anonymized_live_bulk_shape_fixture(load_netbird_fixture: Any) -> None:

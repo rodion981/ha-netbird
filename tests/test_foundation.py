@@ -25,6 +25,7 @@ from custom_components.netbird import (
 from custom_components.netbird.const import (
     CONF_ACCOUNT_ID,
     CONF_API_TOKEN,
+    CONF_CA_CERTIFICATE,
     DOMAIN,
     SENSITIVE_CONFIG_KEYS,
 )
@@ -106,7 +107,7 @@ def test_manifest_and_translation_baseline() -> None:
     strings = json.loads((INTEGRATION_DIR / "strings.json").read_text(encoding="utf-8"))
 
     assert manifest["domain"] == DOMAIN
-    assert manifest["iot_class"] == "cloud_polling"
+    assert manifest["iot_class"] == "local_polling"
     assert manifest["integration_type"] == "hub"
     assert manifest["config_flow"] is True
 
@@ -159,7 +160,7 @@ def test_fixture_convention(
 
 def test_sensitive_configuration_boundary() -> None:
     """Test sensitive configuration keys stay explicit and out of resources."""
-    assert frozenset({CONF_API_TOKEN}) == SENSITIVE_CONFIG_KEYS
+    assert frozenset({CONF_API_TOKEN, CONF_CA_CERTIFICATE}) == SENSITIVE_CONFIG_KEYS
 
     resource_files = [
         REPOSITORY_ROOT / "hacs.json",
