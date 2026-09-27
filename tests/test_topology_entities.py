@@ -404,6 +404,75 @@ async def test_stale_resource_and_network_devices_are_removed(
     )
 
 
+async def test_reload_preserves_retained_resource_entities(
+    hass: HomeAssistant, topology_client: MagicMock
+) -> None:
+    """Reload retains unavailable resources until the cleanup threshold."""
+    entry = await _setup(hass)
+    registry = er.async_get(hass)
+    devices = dr.async_get(hass)
+    address_id = _entity_id(
+        hass,
+        "sensor",
+        f"{ACCOUNT}:network:network-1:resource:resource-1:address",
+    )
+    enabled_id = _entity_id(
+        hass,
+        "binary_sensor",
+        f"{ACCOUNT}:network:network-1:resource:resource-1:enabled",
+    )
+    resource_device = devices.async_get_device_by_identifier(
+        (DOMAIN, f"{ACCOUNT}:network:network-1:resource:resource-1"),
+        entry.entry_id,
+    )
+    assert resource_device is not None
+
+    topology_client.async_get_network_resources.return_value = ()
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _state(hass, address_id) == STATE_UNAVAILABLE
+    assert _state(hass, enabled_id) == STATE_UNAVAILABLE
+
+    old_topology = entry.runtime_data.topology_coordinator
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.topology_coordinator is not old_topology
+    assert registry.async_get(address_id) is not None
+    assert registry.async_get(enabled_id) is not None
+    assert _state(hass, address_id) == STATE_UNAVAILABLE
+    assert _state(hass, enabled_id) == STATE_UNAVAILABLE
+    reloaded_device = devices.async_get_device_by_identifier(
+        (DOMAIN, f"{ACCOUNT}:network:network-1:resource:resource-1"),
+        entry.entry_id,
+    )
+    assert reloaded_device is not None
+    assert reloaded_device.id == resource_device.id
+
+    topology_client.async_get_network_resources.return_value = (RESOURCE,)
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert (
+        _entity_id(
+            hass,
+            "sensor",
+            f"{ACCOUNT}:network:network-1:resource:resource-1:address",
+        )
+        == address_id
+    )
+    assert (
+        _entity_id(
+            hass,
+            "binary_sensor",
+            f"{ACCOUNT}:network:network-1:resource:resource-1:enabled",
+        )
+        == enabled_id
+    )
+    assert _state(hass, address_id) == "192.0.2.0/24"
+    assert _state(hass, enabled_id) == "on"
+
+
 async def test_foreign_device_association_blocks_topology_cleanup(
     hass: HomeAssistant, topology_client: MagicMock
 ) -> None:
