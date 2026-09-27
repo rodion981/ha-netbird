@@ -2,7 +2,7 @@
 
 <!-- netbird-doc-contract: {"release":"0.3.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 
-This is the project's evidence checklist for the released Cloud `0.3.0` baseline and the ROD-48 self-hosted implementation candidate. It is **not** a Home Assistant Core quality-tier award. Self-hosted support is not release-proven until its protected live gate passes. Recheck the [current Home Assistant rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/) before claiming a tier. Evidence below points to repository code, tests, and named hosted runs, not to a production installation.
+This is the project's evidence checklist for the released Cloud `0.3.0` baseline and the ROD-48 self-hosted implementation candidate. It is **not** a Home Assistant Core quality-tier award. The protected self-hosted lifecycle check passed, with the non-empty self-hosted peer case explicitly retained as a release-evidence limitation below. Recheck the [current Home Assistant rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/) before claiming a tier. Evidence below points to repository code, tests, and named hosted runs, not to a production installation.
 
 ## Reproducible gate
 
@@ -25,7 +25,7 @@ Evidence classes remain separate:
 - Hosted evidence: release publication requires the v0.3.0 tag workflow to pass quality, hassfest, HACS validation, and Gitleaks on the release commit.
 - Release evidence: [v0.3.0](https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0), its tag workflow, the official NetBird brand asset, and the direct HACS custom-repository button form the release evidence.
 - Live API evidence: the protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) passed on 25 September 2026 for the account, peer, network, resource, router, and peer-group input shapes used by v0.3.0. This is point-in-time shape evidence only; it does not verify derived entities or reachability.
-- Self-hosted live evidence: pending. Before publication, record the exact NetBird version and HTTPS deployment style plus setup/reload/poll, same-account reauth and reconfigure, redirect/TLS failure, and private-CA coverage without retaining any private value.
+- Self-hosted live evidence: on 27 September 2026, a disposable NetBird `0.79.0` combined server behind an Nginx HTTPS reverse proxy passed private-CA setup, config-entry load, peer and topology polling, reload, same-account PAT reauth, same-account endpoint/dashboard reconfigure, untrusted-CA failure, and fail-closed HTTPS redirect handling. The account contained one Network, one Resource, and one group-based Router. The peer endpoint succeeded with an empty list; a non-empty peer on this self-hosted deployment was not separately exercised. Public DNS, Let's Encrypt, frontend rendering, installation through HACS, and end-to-end VPN reachability were not tested. The disposable PAT, CA, URL, identifiers, response bodies, containers, volume, and test harness were removed after the run.
 - Frontend and installation evidence must be recorded separately from automated test results when performed.
 
 ## Implemented rule evidence
