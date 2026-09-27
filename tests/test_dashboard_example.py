@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
+import pytest
 import yaml  # type: ignore[import-untyped]
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.template import Template
@@ -22,12 +23,13 @@ from custom_components.netbird.models import (
 )
 
 ROOT = Path(__file__).parents[1]
-DASHBOARD = ROOT / "examples" / "netbird-dashboard.yaml"
+DASHBOARD_EN = ROOT / "examples" / "netbird-dashboard.yaml"
+DASHBOARD_UK = ROOT / "examples" / "netbird-dashboard.uk.yaml"
 
 
-def _dashboard() -> dict[str, Any]:
+def _dashboard(path: Path = DASHBOARD_EN) -> dict[str, Any]:
     """Load the dashboard example."""
-    dashboard = yaml.safe_load(DASHBOARD.read_text(encoding="utf-8"))
+    dashboard = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert isinstance(dashboard, dict)
     return dashboard
 
@@ -42,21 +44,28 @@ def _markdown_contents(dashboard: dict[str, Any]) -> list[str]:
     ]
 
 
-def test_dashboard_uses_native_dynamic_discovery() -> None:
-    source = DASHBOARD.read_text(encoding="utf-8")
-    dashboard = _dashboard()
+@pytest.mark.parametrize(
+    ("path", "headings"),
+    [
+        (
+            DASHBOARD_EN,
+            ["Overview", "Peers", "Networks", "Network resources"],
+        ),
+        (DASHBOARD_UK, ["Огляд", "Піри", "Мережі", "Мережеві ресурси"]),
+    ],
+)
+def test_dashboard_uses_native_dynamic_discovery(
+    path: Path, headings: list[str]
+) -> None:
+    source = path.read_text(encoding="utf-8")
+    dashboard = _dashboard(path)
     view = dashboard["views"][0]
     cards = [card for section in view["sections"] for card in section["cards"]]
 
     assert view["type"] == "sections"
     assert view["max_columns"] == 2
     assert {card["type"] for card in cards} == {"heading", "markdown"}
-    assert [card["heading"] for card in cards if card["type"] == "heading"] == [
-        "Overview / Огляд",
-        "Peers / Піри",
-        "Networks / Мережі",
-        "Network resources / Мережеві ресурси",
-    ]
+    assert [card["heading"] for card in cards if card["type"] == "heading"] == headings
     assert "custom:auto-entities" not in source
     assert 'integration_entities("netbird")' in source
     assert "netbird_key" in source
@@ -67,20 +76,45 @@ def test_dashboard_uses_native_dynamic_discovery() -> None:
     assert "| Name |" not in source
 
 
+@pytest.mark.parametrize(
+    ("path", "empty_messages", "overview"),
+    [
+        (
+            DASHBOARD_EN,
+            (
+                "No peer entities found",
+                "No networks found",
+                "No network resources found",
+            ),
+            "— / — peers connected",
+        ),
+        (
+            DASHBOARD_UK,
+            (
+                "Пірів не знайдено",
+                "Мереж не знайдено",
+                "Мережевих ресурсів не знайдено",
+            ),
+            "— / — пірів підключено",
+        ),
+    ],
+)
 def test_dashboard_jinja_is_valid_and_empty_state_renders(
     hass: HomeAssistant,
+    path: Path,
+    empty_messages: tuple[str, str, str],
+    overview: str,
 ) -> None:
     rendered_cards: list[str] = []
-    for content in _markdown_contents(_dashboard()):
+    for content in _markdown_contents(_dashboard(path)):
         template = Template(content, hass)
         template.ensure_valid()
         rendered_cards.append(template.async_render(parse_result=False))
 
     rendered = "\n".join(rendered_cards)
-    assert "No peer entities found" in rendered
-    assert "No networks found" in rendered
-    assert "No network resources found" in rendered
-    assert "— / — peers connected" in rendered
+    for message in empty_messages:
+        assert message in rendered
+    assert overview in rendered
 
 
 async def test_dashboard_populated_sections_are_compact_and_operational(
@@ -127,11 +161,11 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
 
     rendered = "\n".join(
         Template(content, hass).async_render(parse_result=False)
-        for content in _markdown_contents(_dashboard())
+        for content in _markdown_contents(_dashboard(DASHBOARD_EN))
     )
     assert "**🟢 1 / 1 peers connected" in rendered
-    assert "Resources / Ресурси: **1 / 1 enabled" in rendered
-    assert "Routers / Маршрутизатори: **1 / 1 enabled" in rendered
+    assert "Resources: **1 / 1 enabled" in rendered
+    assert "Routers: **1 / 1 enabled" in rendered
     assert "🟢 Online · **Demo peer**" in rendered
     assert "`192.0.2.10` · Seen: 27 Sep" in rendered
     assert "· Login: 27 Sep" in rendered
@@ -143,6 +177,18 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
     assert "`192.0.2.0/24` · subnet · 🟢 Routed" in rendered
     assert "2026-09-27T18:16:05+00:00" not in rendered
 
+    rendered_uk = "\n".join(
+        Template(content, hass).async_render(parse_result=False)
+        for content in _markdown_contents(_dashboard(DASHBOARD_UK))
+    )
+    assert "**🟢 1 / 1 пірів підключено" in rendered_uk
+    assert "Ресурси: **1 / 1 увімкнено" in rendered_uk
+    assert "🟢 Онлайн · **Demo peer**" in rendered_uk
+    assert "Доступні піри: 1 · SSH: Так · Ефемерний: Ні" in rendered_uk  # noqa: RUF001
+    assert "Ресурси: **1/1** · Маршрутизатори: **1/1**" in rendered_uk
+    assert "Підключені піри маршрутизації: **1**" in rendered_uk
+    assert "`192.0.2.0/24` · subnet · 🟢 Маршрутизується" in rendered_uk
+
     connection = hass.states.get("binary_sensor.demo_peer_connection")
     ip_address = hass.states.get("sensor.demo_peer_ip_address")
     assert connection is not None
@@ -151,7 +197,7 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
     hass.states.async_set(ip_address.entity_id, "unavailable", ip_address.attributes)
     degraded = "\n".join(
         Template(content, hass).async_render(parse_result=False)
-        for content in _markdown_contents(_dashboard())
+        for content in _markdown_contents(_dashboard(DASHBOARD_EN))
     )
     assert "⚫ Unavailable · **Demo peer**" in degraded
     assert "`Unavailable` · Seen: 27 Sep" in degraded

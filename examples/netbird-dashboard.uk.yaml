@@ -1,5 +1,5 @@
-# English native, dependency-free NetBird dashboard for Home Assistant.
-# Paste this file into a dashboard's raw configuration editor.
+# Український нативний dashboard NetBird для Home Assistant без зовнішніх залежностей.
+# Вставте цей файл у редактор сирої конфігурації dashboard.
 
 title: NetBird
 views:
@@ -12,15 +12,15 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Overview
+            heading: Огляд
             icon: mdi:view-dashboard-outline
           - type: markdown
             content: |-
               {% set netbird_entities = integration_entities("netbird") %}
               {% macro value(entity_id) -%}
                 {%- if not entity_id -%}—
-                {%- elif states(entity_id) == 'unavailable' -%}Unavailable
-                {%- elif states(entity_id) == 'unknown' -%}Unknown
+                {%- elif states(entity_id) == 'unavailable' -%}Недоступно
+                {%- elif states(entity_id) == 'unknown' -%}Невідомо
                 {%- else -%}{{ states(entity_id) }}
                 {%- endif -%}
               {%- endmacro %}
@@ -38,52 +38,52 @@ views:
                   {% if key == 'enabled_router_count' %}{% set overview.enabled_routers = entity_id %}{% endif %}
                 {% endif %}
               {% endfor %}
-              **🟢 {{ value(overview.connected) }} / {{ value(overview.peers) }} peers connected**
+              **🟢 {{ value(overview.connected) }} / {{ value(overview.peers) }} пірів підключено**
 
-              🌐 Networks: **{{ value(overview.networks) }}**
+              🌐 Мережі: **{{ value(overview.networks) }}**
 
-              📦 Resources: **{{ value(overview.enabled_resources) }} / {{ value(overview.resources) }} enabled**
+              📦 Ресурси: **{{ value(overview.enabled_resources) }} / {{ value(overview.resources) }} увімкнено**
 
-              🧭 Routers: **{{ value(overview.enabled_routers) }} / {{ value(overview.routers) }} enabled**
+              🧭 Маршрутизатори: **{{ value(overview.enabled_routers) }} / {{ value(overview.routers) }} увімкнено**
 
       - type: grid
         cards:
           - type: heading
-            heading: Peers
+            heading: Піри
             icon: mdi:lan-connect
           - type: markdown
             content: |-
               {% set netbird_entities = integration_entities("netbird") %}
               {% macro value(entity_id) -%}
                 {%- if not entity_id -%}—
-                {%- elif states(entity_id) == 'unavailable' -%}Unavailable
-                {%- elif states(entity_id) == 'unknown' -%}Unknown
+                {%- elif states(entity_id) == 'unavailable' -%}Недоступно
+                {%- elif states(entity_id) == 'unknown' -%}Невідомо
                 {%- else -%}{{ states(entity_id) }}
                 {%- endif -%}
               {%- endmacro %}
               {% macro short_time(entity_id) -%}
                 {%- if not entity_id -%}—
-                {%- elif states(entity_id) == 'unavailable' -%}Unavailable
-                {%- elif states(entity_id) == 'unknown' -%}Unknown
+                {%- elif states(entity_id) == 'unavailable' -%}Недоступно
+                {%- elif states(entity_id) == 'unknown' -%}Невідомо
                 {%- else -%}
                   {%- set parsed = as_datetime(states(entity_id), none) -%}
                   {{- as_local(parsed).strftime('%d %b %H:%M') if parsed else states(entity_id) -}}
                 {%- endif -%}
               {%- endmacro %}
               {% macro connection(entity_id) -%}
-                {%- if not entity_id -%}❔ Unknown
-                {%- elif states(entity_id) == 'on' -%}🟢 Online
-                {%- elif states(entity_id) == 'off' -%}⚪ Offline
-                {%- elif states(entity_id) == 'unavailable' -%}⚫ Unavailable
-                {%- else -%}❔ Unknown
+                {%- if not entity_id -%}❔ Невідомо
+                {%- elif states(entity_id) == 'on' -%}🟢 Онлайн
+                {%- elif states(entity_id) == 'off' -%}⚪ Офлайн
+                {%- elif states(entity_id) == 'unavailable' -%}⚫ Недоступно
+                {%- else -%}❔ Невідомо
                 {%- endif -%}
               {%- endmacro %}
               {% macro toggle(entity_id) -%}
                 {%- if not entity_id -%}—
-                {%- elif states(entity_id) == 'on' -%}On
-                {%- elif states(entity_id) == 'off' -%}Off
-                {%- elif states(entity_id) == 'unavailable' -%}Unavailable
-                {%- else -%}Unknown
+                {%- elif states(entity_id) == 'on' -%}Так
+                {%- elif states(entity_id) == 'off' -%}Ні
+                {%- elif states(entity_id) == 'unavailable' -%}Недоступно
+                {%- else -%}Невідомо
                 {%- endif -%}
               {%- endmacro %}
               {% set peer_seeds = namespace(items=[]) %}
@@ -108,16 +108,16 @@ views:
                   {% if key == 'approval_required' %}{% set row.approval = entity_id %}{% endif %}
                 {% endfor %}
                 {% set warnings = namespace(items=[]) %}
-                {% if row.expired and is_state(row.expired, 'on') %}{% set warnings.items = warnings.items + ['⚠ Login expired'] %}{% endif %}
-                {% if row.approval and is_state(row.approval, 'on') %}{% set warnings.items = warnings.items + ['⚠ Approval required'] %}{% endif %}
-                {% set peer_name = device_attr(device, 'name') | default('Unnamed peer', true) %}
-                {% set activity = '`' ~ value(row.ip) ~ '` · Seen: ' ~ short_time(row.seen) ~ ' · Login: ' ~ short_time(row.login) %}
-                {% set capabilities = 'Accessible: ' ~ value(row.accessible) ~ ' · SSH: ' ~ toggle(row.ssh) ~ ' · Ephemeral: ' ~ toggle(row.ephemeral) %}
+                {% if row.expired and is_state(row.expired, 'on') %}{% set warnings.items = warnings.items + ['⚠ Термін входу минув'] %}{% endif %}
+                {% if row.approval and is_state(row.approval, 'on') %}{% set warnings.items = warnings.items + ['⚠ Потрібне схвалення'] %}{% endif %}
+                {% set peer_name = device_attr(device, 'name') | default('Пір без назви', true) %}
+                {% set activity = '`' ~ value(row.ip) ~ '` · Востаннє онлайн: ' ~ short_time(row.seen) ~ ' · Вхід: ' ~ short_time(row.login) %}
+                {% set capabilities = 'Доступні піри: ' ~ value(row.accessible) ~ ' · SSH: ' ~ toggle(row.ssh) ~ ' · Ефемерний: ' ~ toggle(row.ephemeral) %}
                 {% if warnings.items %}{% set capabilities = capabilities ~ ' · ' ~ warnings.items | join(' · ') %}{% endif %}
                 {% set peer_rows.items = peer_rows.items + ['- ' ~ connection(row.connected) ~ ' · **' ~ peer_name ~ '**  \n  ' ~ activity ~ '  \n  ' ~ capabilities] %}
               {% endfor %}
               {% if peer_rows.items | count == 0 %}
-              _No peer entities found._
+              _Пірів не знайдено._
               {% else %}
               {{ peer_rows.items | join('\n\n') }}
               {% endif %}
@@ -125,15 +125,15 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Networks
+            heading: Мережі
             icon: mdi:lan
           - type: markdown
             content: |-
               {% set netbird_entities = integration_entities("netbird") %}
               {% macro value(entity_id) -%}
                 {%- if not entity_id -%}—
-                {%- elif states(entity_id) == 'unavailable' -%}Unavailable
-                {%- elif states(entity_id) == 'unknown' -%}Unknown
+                {%- elif states(entity_id) == 'unavailable' -%}Недоступно
+                {%- elif states(entity_id) == 'unknown' -%}Невідомо
                 {%- else -%}{{ states(entity_id) }}
                 {%- endif -%}
               {%- endmacro %}
@@ -154,12 +154,12 @@ views:
                   {% if key == 'router_count' %}{% set row.routers = entity_id %}{% endif %}
                   {% if key == 'enabled_router_count' %}{% set row.enabled_routers = entity_id %}{% endif %}
                 {% endfor %}
-                {% set network_name = device_attr(device, 'name') | default('Unnamed network', true) %}
-                {% set details = 'Resources: **' ~ value(row.enabled_resources) ~ '/' ~ value(row.resources) ~ '** · Routers: **' ~ value(row.enabled_routers) ~ '/' ~ value(row.routers) ~ '** · Connected routing peers: **' ~ value(row.connected) ~ '**' %}
+                {% set network_name = device_attr(device, 'name') | default('Мережа без назви', true) %}
+                {% set details = 'Ресурси: **' ~ value(row.enabled_resources) ~ '/' ~ value(row.resources) ~ '** · Маршрутизатори: **' ~ value(row.enabled_routers) ~ '/' ~ value(row.routers) ~ '** · Підключені піри маршрутизації: **' ~ value(row.connected) ~ '**' %}
                 {% set network_rows.items = network_rows.items + ['- **' ~ network_name ~ '**  \n  ' ~ details] %}
               {% endfor %}
               {% if network_rows.items | count == 0 %}
-              _No networks found._
+              _Мереж не знайдено._
               {% else %}
               {{ network_rows.items | join('\n\n') }}
               {% endif %}
@@ -167,28 +167,28 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Network resources
+            heading: Мережеві ресурси
             icon: mdi:server-network
           - type: markdown
             content: |-
               {% set netbird_entities = integration_entities("netbird") %}
               {% macro value(entity_id) -%}
                 {%- if not entity_id -%}—
-                {%- elif states(entity_id) == 'unavailable' -%}Unavailable
-                {%- elif states(entity_id) == 'unknown' -%}Unknown
+                {%- elif states(entity_id) == 'unavailable' -%}Недоступно
+                {%- elif states(entity_id) == 'unknown' -%}Невідомо
                 {%- else -%}{{ states(entity_id) }}
                 {%- endif -%}
               {%- endmacro %}
               {% macro route_status(enabled, routing) -%}
-                {%- if not enabled -%}❔ Unknown
-                {%- elif states(enabled) == 'off' -%}⏸ Disabled
-                {%- elif states(enabled) == 'unavailable' -%}⚫ Unavailable
-                {%- elif states(enabled) != 'on' -%}❔ Unknown
-                {%- elif not routing -%}❔ Routing unknown
-                {%- elif states(routing) == 'on' -%}🟢 Routed
-                {%- elif states(routing) == 'off' -%}🔴 No connected router
-                {%- elif states(routing) == 'unavailable' -%}⚫ Routing unavailable
-                {%- else -%}❔ Routing unknown
+                {%- if not enabled -%}❔ Невідомо
+                {%- elif states(enabled) == 'off' -%}⏸ Вимкнено
+                {%- elif states(enabled) == 'unavailable' -%}⚫ Недоступно
+                {%- elif states(enabled) != 'on' -%}❔ Невідомо
+                {%- elif not routing -%}❔ Стан маршрутизації невідомий
+                {%- elif states(routing) == 'on' -%}🟢 Маршрутизується
+                {%- elif states(routing) == 'off' -%}🔴 Немає підключеного маршрутизатора
+                {%- elif states(routing) == 'unavailable' -%}⚫ Маршрутизація недоступна
+                {%- else -%}❔ Стан маршрутизації невідомий
                 {%- endif -%}
               {%- endmacro %}
               {% set resource_seeds = namespace(items=[]) %}
@@ -208,13 +208,14 @@ views:
                   {% if key == 'address' %}{% set row.address = entity_id %}{% endif %}
                 {% endfor %}
                 {% set parent = device_attr(device, 'via_device_id') %}
-                {% set resource_name = device_attr(device, 'name') | default('Unnamed resource', true) %}
+                {% set resource_name = device_attr(device, 'name') | default('Ресурс без назви', true) %}
                 {% set network_name = device_attr(parent, 'name') if parent else '—' %}
                 {% set details = '`' ~ value(row.address) ~ '` · ' ~ value(row.type) ~ ' · ' ~ route_status(row.enabled, row.routing) %}
                 {% set resource_rows.items = resource_rows.items + ['- **' ~ resource_name ~ '** · ' ~ network_name ~ '  \n  ' ~ details] %}
               {% endfor %}
               {% if resource_rows.items | count == 0 %}
-              _No network resources found._
+              _Мережевих ресурсів не знайдено._
               {% else %}
               {{ resource_rows.items | join('\n\n') }}
               {% endif %}
+

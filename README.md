@@ -56,7 +56,7 @@ The button opens HACS; downloading and setting up the integration remain separat
 
 ### Dashboard example
 
-The [universal NetBird dashboard](examples/netbird-dashboard.yaml) is a responsive native Sections view with separate Overview, Peers, Networks, and Resources cards. It discovers entities through the integration and stable `netbird_key`, so it does not depend on generated entity IDs or peer names.
+The [English NetBird dashboard](examples/netbird-dashboard.yaml) and [Ukrainian version](examples/netbird-dashboard.uk.yaml) are responsive native Sections views with separate Overview, Peers, Networks, and Resources cards. They discover entities through the integration and stable `netbird_key`, so they do not depend on generated entity IDs or peer names.
 
 1. Create an empty dashboard in Home Assistant.
 2. Open its **Raw configuration editor** and paste the example YAML.
