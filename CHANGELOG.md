@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The project follows [Se
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-27
+
 ### Added
 
 - Explicit NetBird Cloud and self-hosted deployment profiles.
@@ -16,7 +18,8 @@ All notable changes to this project are documented here. The project follows [Se
 ### Compatibility
 
 - Existing version-2 entries migrate to an explicit Cloud profile without changing account, device, or entity identity.
-- Self-hosted setup validates the complete consumed read-only API contract. Protected live self-hosted validation remains required before release.
+- Self-hosted setup validates the complete consumed read-only API contract.
+- A protected disposable NetBird `0.79.0` lifecycle test covered setup, loading, polling, reload, reauthentication, reconfiguration, private-CA trust, TLS rejection, and redirect rejection. The non-empty self-hosted peer case remains a documented evidence limitation.
 
 ## [0.3.0] - 2026-09-26
 
@@ -73,3 +76,4 @@ All notable changes to this project are documented here. The project follows [Se
 [0.1.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.1.0
 [0.2.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0
 [0.3.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0
+[1.0.0]: https://github.com/rodion981/ha-netbird/releases/tag/v1.0.0

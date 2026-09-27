@@ -36,7 +36,7 @@ authentication data.
 
 ## Versioning
 
-The project uses Semantic Versioning. Development starts at `0.x`; breaking
-changes may occur between minor versions until `1.0.0`. The version in
+The project uses Semantic Versioning. Starting with `1.0.0`, backward-incompatible
+changes require a new major version. The version in
 `custom_components/netbird/manifest.json` is the integration release version.
 Releases and tags are created only after the matching quality gate passes.
