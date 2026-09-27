@@ -104,7 +104,9 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
                     ip="192.0.2.10",
                     connected=True,
                     last_seen=datetime(2026, 9, 27, 18, 16, 5, tzinfo=UTC),
+                    last_login=datetime(2026, 9, 27, 17, 5, 0, tzinfo=UTC),
                     ssh_enabled=True,
+                    ephemeral=False,
                     login_expired=True,
                     accessible_peers_count=1,
                 ),
@@ -127,10 +129,13 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
         Template(content, hass).async_render(parse_result=False)
         for content in _markdown_contents(_dashboard())
     )
-    assert "**1 / 1 peers connected" in rendered
+    assert "**🟢 1 / 1 peers connected" in rendered
+    assert "Resources / Ресурси: **1 / 1 enabled" in rendered
+    assert "Routers / Маршрутизатори: **1 / 1 enabled" in rendered
     assert "🟢 Online · **Demo peer**" in rendered
     assert "`192.0.2.10` · Seen: 27 Sep" in rendered
-    assert "Accessible: 1 · SSH · ⚠ Login expired" in rendered
+    assert "· Login: 27 Sep" in rendered
+    assert "Accessible: 1 · SSH: On · Ephemeral: Off · ⚠ Login expired" in rendered
     assert "**Home LAN**" in rendered
     assert "Resources: **1/1** · Routers: **1/1**" in rendered
     assert "Connected routing peers: **1**" in rendered
