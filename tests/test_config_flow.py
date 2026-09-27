@@ -7,7 +7,12 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_RECONFIGURE, SOURCE_USER
+from homeassistant.config_entries import (
+    SOURCE_REAUTH,
+    SOURCE_RECONFIGURE,
+    SOURCE_USER,
+    ConfigFlowResult,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
@@ -20,13 +25,25 @@ from custom_components.netbird.api import (
     NetBirdAuthenticationError,
     NetBirdJsonError,
     NetBirdPermissionError,
+    NetBirdRedirectError,
     NetBirdResponseError,
     NetBirdSchemaError,
     NetBirdServerError,
     NetBirdTimeoutError,
+    NetBirdTlsError,
     NetBirdTransportError,
 )
-from custom_components.netbird.const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
+from custom_components.netbird.const import (
+    CONF_ACCOUNT_ID,
+    CONF_API_TOKEN,
+    CONF_API_URL,
+    CONF_CA_CERTIFICATE,
+    CONF_DASHBOARD_URL,
+    CONF_DEPLOYMENT_TYPE,
+    DEPLOYMENT_CLOUD,
+    DEPLOYMENT_SELF_HOSTED,
+    DOMAIN,
+)
 from custom_components.netbird.models import NetBirdAccount, NetBirdSnapshot
 
 ACCOUNT_ID = "account-test-id"
@@ -70,7 +87,8 @@ async def test_migrate_v1_enables_only_integration_disabled_promoted_entities(
 
     assert await async_migrate_entry(hass, entry)
 
-    assert entry.version == 2
+    assert entry.version == 3
+    assert entry.data[CONF_DEPLOYMENT_TYPE] == DEPLOYMENT_CLOUD
     migrated_seen = registry.async_get(integration_disabled.entity_id)
     migrated_approval = registry.async_get(promoted_approval.entity_id)
     preserved_user_choice = registry.async_get(user_disabled.entity_id)
@@ -95,17 +113,74 @@ def _mock_client_result(result: NetBirdSnapshot | Exception) -> Any:
         client_class.return_value.async_get_snapshot = AsyncMock(side_effect=result)
     else:
         client_class.return_value.async_get_snapshot = AsyncMock(return_value=result)
+        client_class.return_value.async_get_networks = AsyncMock(return_value=())
     return client_patcher, client_class
 
 
-async def test_user_form_uses_password_selector(hass: HomeAssistant) -> None:
-    """Test PAT input is rendered with password semantics."""
-    result = await hass.config_entries.flow.async_init(
+async def _run_cloud_flow(hass: HomeAssistant, token: str) -> ConfigFlowResult:
+    """Choose Cloud and submit one PAT through the user flow."""
+    start = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    form = await hass.config_entries.flow.async_configure(
+        start["flow_id"], {"next_step_id": DEPLOYMENT_CLOUD}
+    )
+    return await hass.config_entries.flow.async_configure(
+        form["flow_id"], {CONF_API_TOKEN: token}
+    )
+
+
+async def _run_self_hosted_flow(
+    hass: HomeAssistant, data: dict[str, Any]
+) -> ConfigFlowResult:
+    """Choose self-hosted and submit one explicit deployment profile."""
+    start = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    form = await hass.config_entries.flow.async_configure(
+        start["flow_id"], {"next_step_id": DEPLOYMENT_SELF_HOSTED}
+    )
+    return await hass.config_entries.flow.async_configure(form["flow_id"], data)
+
+
+async def test_migrate_v2_adds_cloud_profile_without_changing_identity(
+    hass: HomeAssistant,
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_ACCOUNT_ID: ACCOUNT_ID, CONF_API_TOKEN: OLD_TOKEN},
+        unique_id=ACCOUNT_ID,
+        version=2,
+    )
+    entry.add_to_hass(hass)
+
+    assert await async_migrate_entry(hass, entry)
+
+    assert entry.version == 3
+    assert entry.unique_id == ACCOUNT_ID
+    assert entry.data == {
+        CONF_ACCOUNT_ID: ACCOUNT_ID,
+        CONF_API_TOKEN: OLD_TOKEN,
+        CONF_DEPLOYMENT_TYPE: DEPLOYMENT_CLOUD,
+    }
+
+
+async def test_user_menu_then_cloud_form_uses_password_selector(
+    hass: HomeAssistant,
+) -> None:
+    """Test deployment selection precedes a password-only Cloud form."""
+    menu = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
 
+    assert menu["type"] is FlowResultType.MENU
+    assert menu["step_id"] == "user"
+    assert menu["menu_options"] == ["cloud", "self_hosted"]
+    result = await hass.config_entries.flow.async_configure(
+        menu["flow_id"], {"next_step_id": DEPLOYMENT_CLOUD}
+    )
     assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "cloud"
     assert result["data_schema"] is not None
     schema_values = list(result["data_schema"].schema.values())
     assert len(schema_values) == 1
@@ -118,11 +193,7 @@ async def test_user_success_creates_account_bound_entry(
     """Test a valid PAT creates one minimal account-bound entry."""
     client_patcher, client_class = _mock_client_result(_snapshot())
     try:
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": SOURCE_USER},
-            data={CONF_API_TOKEN: NEW_TOKEN},
-        )
+        result = await _run_cloud_flow(hass, NEW_TOKEN)
     finally:
         client_patcher.stop()
 
@@ -131,10 +202,148 @@ async def test_user_success_creates_account_bound_entry(
     assert result["data"] == {
         CONF_ACCOUNT_ID: ACCOUNT_ID,
         CONF_API_TOKEN: NEW_TOKEN,
+        CONF_DEPLOYMENT_TYPE: DEPLOYMENT_CLOUD,
     }
     assert result["result"].unique_id == ACCOUNT_ID
     client_class.return_value.async_get_snapshot.assert_awaited_once_with()
     assert len(hass.config_entries.async_entries(DOMAIN)) == 1
+
+
+async def test_self_hosted_success_stores_normalized_explicit_profile(
+    hass: HomeAssistant,
+) -> None:
+    client_patcher, client_class = _mock_client_result(_snapshot())
+    resolver = AsyncMock(
+        side_effect=["https://netbird.example", "https://dashboard.example"]
+    )
+    try:
+        with patch(
+            "custom_components.netbird.config_flow.async_validate_https_origin",
+            resolver,
+        ):
+            result = await _run_self_hosted_flow(
+                hass,
+                {
+                    CONF_API_URL: "https://NETBIRD.example/",
+                    CONF_DASHBOARD_URL: "https://dashboard.example/",
+                    CONF_API_TOKEN: NEW_TOKEN,
+                    CONF_CA_CERTIFICATE: "",
+                },
+            )
+    finally:
+        client_patcher.stop()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {
+        CONF_ACCOUNT_ID: ACCOUNT_ID,
+        CONF_API_TOKEN: NEW_TOKEN,
+        CONF_DEPLOYMENT_TYPE: DEPLOYMENT_SELF_HOSTED,
+        CONF_API_URL: "https://netbird.example",
+        CONF_DASHBOARD_URL: "https://dashboard.example",
+        CONF_CA_CERTIFICATE: "",
+    }
+    assert client_class.call_args.kwargs["base_url"] == "https://netbird.example"
+    client_class.return_value.async_get_networks.assert_awaited_once_with()
+
+
+async def test_self_hosted_rejects_http_before_api_request(
+    hass: HomeAssistant,
+) -> None:
+    with patch(
+        "custom_components.netbird.config_flow.NetBirdApiClient"
+    ) as client_class:
+        result = await _run_self_hosted_flow(
+            hass,
+            {
+                CONF_API_URL: "http://netbird.example",
+                CONF_API_TOKEN: NEW_TOKEN,
+            },
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_url"}
+    client_class.assert_not_called()
+
+
+async def test_self_hosted_reports_unsupported_topology_contract(
+    hass: HomeAssistant,
+) -> None:
+    client_patcher, client_class = _mock_client_result(_snapshot())
+    client_class.return_value.async_get_networks = AsyncMock(
+        side_effect=NetBirdResponseError(404)
+    )
+    resolver = AsyncMock(return_value="https://netbird.example")
+    try:
+        with patch(
+            "custom_components.netbird.config_flow.async_validate_https_origin",
+            resolver,
+        ):
+            result = await _run_self_hosted_flow(
+                hass,
+                {CONF_API_URL: "https://netbird.example", CONF_API_TOKEN: NEW_TOKEN},
+            )
+    finally:
+        client_patcher.stop()
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "unsupported_server"}
+
+
+async def test_self_hosted_reconfigure_updates_profile_atomically(
+    hass: HomeAssistant,
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ACCOUNT_ID: ACCOUNT_ID,
+            CONF_API_TOKEN: OLD_TOKEN,
+            CONF_DEPLOYMENT_TYPE: DEPLOYMENT_SELF_HOSTED,
+            CONF_API_URL: "https://old.example",
+            CONF_DASHBOARD_URL: "",
+            CONF_CA_CERTIFICATE: "",
+        },
+        unique_id=ACCOUNT_ID,
+        version=3,
+    )
+    entry.add_to_hass(hass)
+    client_patcher, client_class = _mock_client_result(_snapshot())
+    resolver = AsyncMock(
+        side_effect=["https://new.example", "https://dashboard.example"]
+    )
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload_entry:
+        try:
+            start = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+            )
+            with patch(
+                "custom_components.netbird.config_flow.async_validate_https_origin",
+                resolver,
+            ):
+                result = await hass.config_entries.flow.async_configure(
+                    start["flow_id"],
+                    {
+                        CONF_API_URL: "https://new.example/",
+                        CONF_DASHBOARD_URL: "https://dashboard.example/",
+                        CONF_API_TOKEN: NEW_TOKEN,
+                        CONF_CA_CERTIFICATE: "",
+                    },
+                )
+        finally:
+            client_patcher.stop()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == {
+        CONF_ACCOUNT_ID: ACCOUNT_ID,
+        CONF_API_TOKEN: NEW_TOKEN,
+        CONF_DEPLOYMENT_TYPE: DEPLOYMENT_SELF_HOSTED,
+        CONF_API_URL: "https://new.example",
+        CONF_DASHBOARD_URL: "https://dashboard.example",
+        CONF_CA_CERTIFICATE: "",
+    }
+    client_class.return_value.async_get_networks.assert_awaited_once_with()
+    reload_entry.assert_called_once_with(entry.entry_id)
 
 
 async def test_duplicate_account_aborts_with_different_pat(
@@ -149,11 +358,7 @@ async def test_duplicate_account_aborts_with_different_pat(
     entry.add_to_hass(hass)
     client_patcher, _ = _mock_client_result(_snapshot())
     try:
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": SOURCE_USER},
-            data={CONF_API_TOKEN: NEW_TOKEN},
-        )
+        result = await _run_cloud_flow(hass, NEW_TOKEN)
     finally:
         client_patcher.stop()
 
@@ -171,6 +376,8 @@ async def test_duplicate_account_aborts_with_different_pat(
         (lambda: NetBirdTimeoutError("safe"), "cannot_connect"),
         (lambda: NetBirdTransportError("safe"), "cannot_connect"),
         (lambda: NetBirdServerError(503), "cannot_connect"),
+        (lambda: NetBirdRedirectError(302), "redirect_not_allowed"),
+        (lambda: NetBirdTlsError("safe"), "invalid_tls"),
         (lambda: NetBirdJsonError("safe"), "invalid_response"),
         (lambda: NetBirdSchemaError("safe"), "invalid_response"),
         (lambda: RuntimeError(NEW_TOKEN), "unknown"),
@@ -185,11 +392,7 @@ async def test_user_errors_are_distinct_and_secret_safe(
     """Test validation failures remain recoverable, distinct, and secret-safe."""
     client_patcher, _ = _mock_client_result(failure_factory())
     try:
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": SOURCE_USER},
-            data={CONF_API_TOKEN: NEW_TOKEN},
-        )
+        result = await _run_cloud_flow(hass, NEW_TOKEN)
     finally:
         client_patcher.stop()
 
@@ -230,6 +433,7 @@ async def test_reauth_updates_same_account_and_schedules_one_reload(
     assert entry.data == {
         CONF_ACCOUNT_ID: ACCOUNT_ID,
         CONF_API_TOKEN: NEW_TOKEN,
+        CONF_DEPLOYMENT_TYPE: DEPLOYMENT_CLOUD,
     }
     schedule_reload.assert_called_once_with(entry.entry_id)
 
@@ -350,6 +554,7 @@ async def test_reconfigure_replaces_same_account_pat_and_reloads_once(
     assert entry.data == {
         CONF_ACCOUNT_ID: ACCOUNT_ID,
         CONF_API_TOKEN: NEW_TOKEN,
+        CONF_DEPLOYMENT_TYPE: DEPLOYMENT_CLOUD,
     }
     assert hass.config_entries.async_entries(DOMAIN) == [entry]
     client_class.return_value.async_get_snapshot.assert_awaited_once_with()

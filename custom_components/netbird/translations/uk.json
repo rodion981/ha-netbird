@@ -3,10 +3,27 @@
   "config": {
     "step": {
       "user": {
+        "title": "Виберіть тип розгортання NetBird",
+        "menu_options": {
+          "cloud": "NetBird Cloud",
+          "self_hosted": "Власний сервер NetBird"
+        }
+      },
+      "cloud": {
         "title": "Підключення до NetBird Cloud",
-        "description": "Введіть персональний токен доступу з дозволом на читання облікового запису та пірів.",
+        "description": "Введіть персональний токен доступу з дозволом на читання облікового запису, пірів і топології.",
         "data": {
           "api_token": "Персональний токен доступу"
+        }
+      },
+      "self_hosted": {
+        "title": "Підключення до власного сервера NetBird",
+        "description": "Введіть HTTPS-адресу API і токен. Адреса панелі та PEM-сертифікат CA необов’язкові. Шляхи й перенаправлення не підтримуються.",
+        "data": {
+          "api_url": "URL API",
+          "dashboard_url": "URL панелі",
+          "api_token": "Персональний токен доступу",
+          "ca_certificate": "Власний сертифікат CA (PEM)"
         }
       },
       "reauth_confirm": {
@@ -17,18 +34,27 @@
         }
       },
       "reconfigure": {
-        "title": "Замінити токен доступу NetBird",
-        "description": "Введіть новий персональний токен доступу для того самого облікового запису NetBird.",
+        "title": "Переналаштувати NetBird",
+        "description": "Введіть нові параметри того самого облікового запису NetBird. Зміни зберігаються лише після перевірки повного контракту API.",
         "data": {
-          "api_token": "Персональний токен доступу"
+          "api_url": "URL API",
+          "dashboard_url": "URL панелі",
+          "api_token": "Персональний токен доступу",
+          "ca_certificate": "Власний сертифікат CA (PEM)"
         }
       }
     },
     "error": {
       "invalid_auth": "Персональний токен доступу недійсний або протермінований.",
       "insufficient_permissions": "Персональний токен доступу не має дозволу на читання облікового запису та пірів.",
-      "cannot_connect": "Не вдалося підключитися до NetBird Cloud.",
-      "invalid_response": "NetBird Cloud повернув недійсну відповідь.",
+      "cannot_connect": "Не вдалося підключитися до API NetBird.",
+      "invalid_response": "API NetBird повернув недійсну відповідь.",
+      "invalid_url": "Введіть HTTPS-адресу без шляху, параметрів, фрагмента або облікових даних.",
+      "blocked_address": "Адреса веде на loopback, link-local, unspecified або multicast IP.",
+      "invalid_ca": "Власний CA не є коректним набором PEM-сертифікатів.",
+      "invalid_tls": "Не вдалося перевірити TLS-сертифікат.",
+      "redirect_not_allowed": "API повернув перенаправлення. Вкажіть кінцеву HTTPS-адресу API безпосередньо.",
+      "unsupported_server": "Сервер не надає повний контракт API, необхідний інтеграції.",
       "unknown": "Сталася неочікувана помилка."
     },
     "abort": {
@@ -42,9 +68,9 @@
   "exceptions": {
     "invalid_auth": {"message": "Помилка автентифікації NetBird. Оновіть персональний токен доступу."},
     "insufficient_permissions": {"message": "Токен NetBird не має дозволу на читання облікового запису або пірів."},
-    "cannot_connect": {"message": "NetBird Cloud наразі недоступний. Налаштування буде повторено."},
-    "invalid_response": {"message": "NetBird Cloud повернув недійсну відповідь облікового запису або пірів. Налаштування буде повторено."},
-    "unknown": {"message": "Сталася неочікувана помилка NetBird Cloud. Налаштування буде повторено."}
+    "cannot_connect": {"message": "API NetBird наразі недоступний. Налаштування буде повторено."},
+    "invalid_response": {"message": "API NetBird повернув недійсну відповідь облікового запису або пірів. Налаштування буде повторено."},
+    "unknown": {"message": "Сталася неочікувана помилка API NetBird. Налаштування буде повторено."}
   },
   "issues": {
     "stale_peer_cleanup_blocked": {

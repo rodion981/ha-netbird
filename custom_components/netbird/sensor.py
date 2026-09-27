@@ -273,7 +273,9 @@ class NetBirdAccountSensor(CoordinatorEntity[NetBirdPeerCoordinator], SensorEnti
             identifiers={(DOMAIN, account_id)},
             manufacturer="NetBird",
             name="NetBird account",
-            configuration_url=build_dashboard_url("account"),
+            configuration_url=build_dashboard_url(
+                "account", base_url=entry.runtime_data.dashboard_url
+            ),
         )
 
     @property
@@ -305,7 +307,9 @@ class NetBirdAccountTopologySensor(
             identifiers={(DOMAIN, account_id)},
             manufacturer="NetBird",
             name="NetBird account",
-            configuration_url=build_dashboard_url("account"),
+            configuration_url=build_dashboard_url(
+                "account", base_url=entry.runtime_data.dashboard_url
+            ),
         )
 
     @property

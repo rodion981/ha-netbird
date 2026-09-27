@@ -3,10 +3,27 @@
   "config": {
     "step": {
       "user": {
+        "title": "Choose a NetBird deployment",
+        "menu_options": {
+          "cloud": "NetBird Cloud",
+          "self_hosted": "Self-hosted NetBird"
+        }
+      },
+      "cloud": {
         "title": "Connect to NetBird Cloud",
-        "description": "Enter a personal access token with permission to read the account and peers.",
+        "description": "Enter a personal access token with permission to read the account, peers, and topology.",
         "data": {
           "api_token": "Personal access token"
+        }
+      },
+      "self_hosted": {
+        "title": "Connect to self-hosted NetBird",
+        "description": "Enter the HTTPS API origin and a token. The dashboard URL and PEM CA bundle are optional. Paths and redirects are not supported.",
+        "data": {
+          "api_url": "API URL",
+          "dashboard_url": "Dashboard URL",
+          "api_token": "Personal access token",
+          "ca_certificate": "Custom CA certificate (PEM)"
         }
       },
       "reauth_confirm": {
@@ -17,18 +34,27 @@
         }
       },
       "reconfigure": {
-        "title": "Replace NetBird access token",
-        "description": "Enter a new personal access token for the same NetBird account.",
+        "title": "Reconfigure NetBird",
+        "description": "Enter replacement settings for the same NetBird account. Changes are saved only after the complete API contract passes.",
         "data": {
-          "api_token": "Personal access token"
+          "api_url": "API URL",
+          "dashboard_url": "Dashboard URL",
+          "api_token": "Personal access token",
+          "ca_certificate": "Custom CA certificate (PEM)"
         }
       }
     },
     "error": {
       "invalid_auth": "The personal access token is invalid or expired.",
       "insufficient_permissions": "The personal access token does not have permission to read the account and peers.",
-      "cannot_connect": "Failed to connect to NetBird Cloud.",
-      "invalid_response": "NetBird Cloud returned an invalid response.",
+      "cannot_connect": "Failed to connect to the NetBird API.",
+      "invalid_response": "The NetBird API returned an invalid response.",
+      "invalid_url": "Enter an HTTPS origin without a path, query, fragment, or credentials.",
+      "blocked_address": "The URL resolves to a loopback, link-local, unspecified, or multicast address.",
+      "invalid_ca": "The custom CA bundle is not a valid PEM certificate bundle.",
+      "invalid_tls": "TLS certificate verification failed.",
+      "redirect_not_allowed": "The API returned a redirect. Use the final HTTPS API origin directly.",
+      "unsupported_server": "This server does not provide the complete API contract required by the integration.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {
@@ -42,9 +68,9 @@
   "exceptions": {
     "invalid_auth": {"message": "NetBird authentication failed. Update the personal access token."},
     "insufficient_permissions": {"message": "The NetBird token lacks permission to read the account or peers."},
-    "cannot_connect": {"message": "NetBird Cloud is currently unreachable. Setup will retry."},
-    "invalid_response": {"message": "NetBird Cloud returned an invalid account or peer response. Setup will retry."},
-    "unknown": {"message": "An unexpected NetBird Cloud error occurred. Setup will retry."}
+    "cannot_connect": {"message": "The NetBird API is currently unreachable. Setup will retry."},
+    "invalid_response": {"message": "The NetBird API returned an invalid account or peer response. Setup will retry."},
+    "unknown": {"message": "An unexpected NetBird API error occurred. Setup will retry."}
   },
   "issues": {
     "stale_peer_cleanup_blocked": {
