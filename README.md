@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird for Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.1","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Monitor NetBird Cloud or self-hosted peers and Networks from Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Project status
 
-[Version `1.0.0`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.0) adds explicit NetBird Cloud and self-hosted deployment profiles, custom CA trust, and strict redirect handling to the existing peer diagnostics, Networks topology, and group-aware routing availability. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
+[Version `1.0.1`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.1) adds responsive English and Ukrainian dashboard examples and keeps peer, network, and resource discovery stable while entities are unavailable. It retains the explicit NetBird Cloud and self-hosted deployment profiles, custom CA trust, strict redirect handling, Networks topology, and group-aware routing availability from `1.0.0`. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
 
 ## Features
 

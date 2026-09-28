@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The project follows [Se
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-28
+
+### Fixed
+
+- Keep dashboard discovery metadata available when peer, network, or resource entities become unavailable, so transient API failures no longer hide existing rows.
+
+### Added
+
+- Responsive English and Ukrainian native dashboard examples with separate Overview, Peers, Networks, and Network resources sections.
+
 ## [1.0.0] - 2026-09-27
 
 ### Added
@@ -77,3 +87,4 @@ All notable changes to this project are documented here. The project follows [Se
 [0.2.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0
 [0.3.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0
 [1.0.0]: https://github.com/rodion981/ha-netbird/releases/tag/v1.0.0
+[1.0.1]: https://github.com/rodion981/ha-netbird/releases/tag/v1.0.1
