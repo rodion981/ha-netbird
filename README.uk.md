@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird для Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.0","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.1","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Стан peer-пристроїв і Networks NetBird Cloud або власного сервера у Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird для Home Assistant це незалежна read-only інтеграц
 
 ## Стан проєкту
 
-[Версія `1.0.0`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.0) додає явні профілі NetBird Cloud і self-hosted, довіру до власного CA та суворе блокування redirect до наявної діагностики peer-пристроїв, топології Networks і доступності маршрутизації з підтримкою груп. Встановлюйте її через кастомний репозиторій HACS або вручну. Кнопка HACS відкриває цей репозиторій; вона не означає, що інтеграція є в стандартному каталозі HACS.
+[Версія `1.0.1`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.1) додає адаптивні англійський та український приклади dashboard і зберігає стабільне виявлення peer, network та resource entities у стані `unavailable`. Вона зберігає явні профілі NetBird Cloud і self-hosted, довіру до власного CA, суворе блокування redirect, топологію Networks і доступність маршрутизації з підтримкою груп із `1.0.0`. Встановлюйте її через кастомний репозиторій HACS або вручну. Кнопка HACS відкриває цей репозиторій; вона не означає, що інтеграція є в стандартному каталозі HACS.
 
 ## Можливості
 

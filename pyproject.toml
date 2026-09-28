@@ -1,6 +1,6 @@
 [project]
 name = "ha-netbird"
-version = "1.0.0"
+version = "1.0.1"
 description = "Home Assistant custom integration for NetBird"
 requires-python = ">=3.14.2"
 dependencies = []
