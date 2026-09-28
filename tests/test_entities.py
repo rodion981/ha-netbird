@@ -183,7 +183,9 @@ async def test_initial_devices_entities_and_single_request(
     assert _entity(hass, "peer-2", "last_seen") is not None
     minimal_connection = _entity(hass, "peer-2", "connected")
     assert minimal_connection is not None
-    assert _state(hass, minimal_connection.entity_id).state == STATE_UNAVAILABLE
+    minimal_connection_state = _state(hass, minimal_connection.entity_id)
+    assert minimal_connection_state.state == STATE_UNAVAILABLE
+    assert minimal_connection_state.attributes["netbird_key"] == "connected"
     assert (
         _state(hass, connected.entity_id).attributes["friendly_name"]
         == "Test peer Connection"

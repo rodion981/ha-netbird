@@ -23,9 +23,9 @@ class NetBirdPeerEntity(CoordinatorEntity[NetBirdPeerCoordinator]):
         """Bind a stable peer identity without retaining sensitive API data."""
         super().__init__(entry.runtime_data.coordinator)
         self._peer_id = peer.id
+        self._netbird_key = key
         account_id = entry.runtime_data.account_id
         self._attr_unique_id = f"{account_id}:{peer.id}:{key}"
-        self._attr_extra_state_attributes = {"netbird_key": key}
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{account_id}:{peer.id}")},
             manufacturer="NetBird",
@@ -37,6 +37,15 @@ class NetBirdPeerEntity(CoordinatorEntity[NetBirdPeerCoordinator]):
                 peer_id=peer.id,
             ),
         )
+
+    @property
+    @override
+    def capability_attributes(self) -> dict[str, object]:
+        """Keep dashboard discovery metadata while the entity is unavailable."""
+        return {
+            **(super().capability_attributes or {}),
+            "netbird_key": self._netbird_key,
+        }
 
     @property
     def peer(self) -> NetBirdPeer | None:

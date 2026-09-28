@@ -56,12 +56,12 @@ The button opens HACS; downloading and setting up the integration remain separat
 
 ### Dashboard example
 
-The [universal NetBird dashboard](examples/netbird-dashboard.yaml) is one native Markdown card. It discovers entities through the integration and stable `netbird_key`, so it does not depend on generated entity IDs or peer names.
+The [English NetBird dashboard](examples/netbird-dashboard.yaml) and [Ukrainian version](examples/netbird-dashboard.uk.yaml) are responsive native Sections views with separate Overview, Peers, Networks, and Resources cards. They discover entities through the integration and stable `netbird_key`, so they do not depend on generated entity IDs or peer names.
 
 1. Create an empty dashboard in Home Assistant.
 2. Open its **Raw configuration editor** and paste the example YAML.
 
-The dashboard shows account totals, useful peer details, Networks, and network resources. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card.
+The dashboard demonstrates the main account counts, peer connectivity, IP address, activity timestamps, accessibility, SSH and ephemeral state, network capacity, and resource routing availability. It uses wrapping summaries instead of wide tables and formats timestamps in concise local time. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card.
 
 Home Assistant device pages link to the matching dashboard page only when a dashboard origin is known: `/peers` for the account, `/peer?id=<peer-id>`, `/network?id=<network-id>`, or `/network?id=<network-id>&resource=<resource-id>`. Cloud uses `app.netbird.io`; self-hosted setup uses only the separately entered dashboard origin and never infers it from the API URL. Identifiers are query-encoded independently. These links are best effort because dashboard routes are not a stable NetBird API contract.
 

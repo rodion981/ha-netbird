@@ -268,7 +268,6 @@ class NetBirdAccountSensor(CoordinatorEntity[NetBirdPeerCoordinator], SensorEnti
         self.entity_description = description
         account_id = entry.runtime_data.account_id
         self._attr_unique_id = f"{account_id}:{description.key}"
-        self._attr_extra_state_attributes = {"netbird_key": description.key}
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, account_id)},
             manufacturer="NetBird",
@@ -277,6 +276,15 @@ class NetBirdAccountSensor(CoordinatorEntity[NetBirdPeerCoordinator], SensorEnti
                 "account", base_url=entry.runtime_data.dashboard_url
             ),
         )
+
+    @property
+    @override
+    def capability_attributes(self) -> dict[str, object]:
+        """Keep dashboard discovery metadata while the entity is unavailable."""
+        return {
+            **(super().capability_attributes or {}),
+            "netbird_key": self.entity_description.key,
+        }
 
     @property
     @override
@@ -302,7 +310,6 @@ class NetBirdAccountTopologySensor(
         self.entity_description = description
         account_id = entry.runtime_data.account_id
         self._attr_unique_id = f"{account_id}:{description.key}"
-        self._attr_extra_state_attributes = {"netbird_key": description.key}
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, account_id)},
             manufacturer="NetBird",
@@ -311,6 +318,15 @@ class NetBirdAccountTopologySensor(
                 "account", base_url=entry.runtime_data.dashboard_url
             ),
         )
+
+    @property
+    @override
+    def capability_attributes(self) -> dict[str, object]:
+        """Keep dashboard discovery metadata while the entity is unavailable."""
+        return {
+            **(super().capability_attributes or {}),
+            "netbird_key": self.entity_description.key,
+        }
 
     @property
     @override
