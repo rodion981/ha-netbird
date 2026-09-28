@@ -13,6 +13,7 @@ from pytest_homeassistant_custom_component.common import (  # type: ignore[impor
     MockConfigEntry,
 )
 
+from custom_components.netbird.api import NetBirdTransportError
 from custom_components.netbird.const import CONF_ACCOUNT_ID, CONF_API_TOKEN, DOMAIN
 from custom_components.netbird.models import (
     NetBirdAccount,
@@ -201,3 +202,17 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
     )
     assert "⚫ Unavailable · **Demo peer**" in degraded
     assert "`Unavailable` · Seen: 27 Sep" in degraded
+
+    client.async_get_network_routers.side_effect = NetBirdTransportError("safe")
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+    degraded_network = hass.states.get("sensor.home_lan_connected_routing_peers")
+    assert degraded_network is not None
+    assert degraded_network.state == "unavailable"
+    assert degraded_network.attributes["netbird_key"] == "connected_routing_peers"
+    degraded = "\n".join(
+        Template(content, hass).async_render(parse_result=False)
+        for content in _markdown_contents(_dashboard(DASHBOARD_EN))
+    )
+    assert "**Home LAN**" in degraded
+    assert "Routers: **Unavailable/Unavailable**" in degraded

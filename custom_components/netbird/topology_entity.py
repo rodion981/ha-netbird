@@ -28,9 +28,9 @@ class NetBirdNetworkEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
     ) -> None:
         super().__init__(entry.runtime_data.topology_coordinator)
         self._network_id = network_id
+        self._netbird_key = key
         account_id = entry.runtime_data.account_id
         self._attr_unique_id = f"{account_id}:network:{network_id}:{key}"
-        self._attr_extra_state_attributes = {"netbird_key": key}
         item = self.network_topology
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{account_id}:network:{network_id}")},
@@ -43,6 +43,15 @@ class NetBirdNetworkEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
                 network_id=network_id,
             ),
         )
+
+    @property
+    @override
+    def capability_attributes(self) -> dict[str, object]:
+        """Keep dashboard discovery metadata while the entity is unavailable."""
+        return {
+            **(super().capability_attributes or {}),
+            "netbird_key": self._netbird_key,
+        }
 
     @property
     def network_topology(self) -> NetBirdNetworkTopology | None:
@@ -76,10 +85,10 @@ class NetBirdResourceEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
         super().__init__(entry.runtime_data.topology_coordinator)
         self._network_id = network_id
         self._resource_id = resource.id
+        self._netbird_key = key
         account_id = entry.runtime_data.account_id
         prefix = f"{account_id}:network:{network_id}"
         self._attr_unique_id = f"{prefix}:resource:{resource.id}:{key}"
-        self._attr_extra_state_attributes = {"netbird_key": key}
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{prefix}:resource:{resource.id}")},
             manufacturer="NetBird",
@@ -92,6 +101,15 @@ class NetBirdResourceEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
                 resource_id=resource.id,
             ),
         )
+
+    @property
+    @override
+    def capability_attributes(self) -> dict[str, object]:
+        """Keep dashboard discovery metadata while the entity is unavailable."""
+        return {
+            **(super().capability_attributes or {}),
+            "netbird_key": self._netbird_key,
+        }
 
     @property
     def resource(self) -> NetBirdResource | None:
