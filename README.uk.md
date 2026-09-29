@@ -14,7 +14,7 @@
 [English](README.md) | [**Українською**](README.uk.md)
 
 <p align="center">
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Відкрити NetBird у HACS"></a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Відкрити NetBird HA Monitor у HACS"></a>
 </p>
 
 NetBird для Home Assistant це незалежна read-only інтеграція для [NetBird](https://netbird.io/), яка працює з NetBird Cloud або явно вказаним self-hosted HTTPS endpoint. Вона показує стан облікового запису, peer-пристроїв і топологію Networks, Resources та Routers. Позначка «підключено» означає зв'язок із Management Service, але **не підтверджує** доступність VPN-з'єднання між двома пристроями.
@@ -48,9 +48,9 @@ Cloud використовує фіксовану адресу `https://api.netb
 
 1. Відкрийте **HACS > Custom repositories**.
 2. Додайте `https://github.com/rodion981/ha-netbird` із типом **Integration**.
-3. Відкрийте **NetBird** і натисніть **Download**.
+3. Відкрийте **NetBird HA Monitor** і натисніть **Download**.
 4. Перезапустіть Home Assistant.
-5. Відкрийте **Налаштування > Пристрої та служби > Додати інтеграцію**, виберіть **NetBird**, потім Cloud або self-hosted і введіть запитані дані.
+5. Відкрийте **Налаштування > Пристрої та служби > Додати інтеграцію**, виберіть **NetBird HA Monitor**, потім Cloud або self-hosted і введіть запитані дані.
 
 Кнопка відкриває HACS; завантаження та налаштування інтеграції виконуються окремо. Якщо HACS не має доступу до репозиторію, встановіть інтеграцію вручну.
 
@@ -67,7 +67,7 @@ Dashboard демонструє основні лічильники обліко�
 
 ### Вручну та оновлення
 
-Скопіюйте `custom_components/netbird` до каталогу конфігурації Home Assistant за шляхом `custom_components/netbird`. Перезапустіть Home Assistant і додайте **NetBird** через **Пристрої та служби**. Для ручного оновлення зробіть резервну копію конфігурації, замініть цей каталог файлами вибраної версії та перезапустіть Home Assistant. Для оновлення через HACS скористайтеся його звичайним механізмом і перезапустіть Home Assistant.
+Скопіюйте `custom_components/netbird` до каталогу конфігурації Home Assistant за шляхом `custom_components/netbird`. Перезапустіть Home Assistant і додайте **NetBird HA Monitor** через **Пристрої та служби**. Для ручного оновлення зробіть резервну копію конфігурації, замініть цей каталог файлами вибраної версії та перезапустіть Home Assistant. Для оновлення через HACS скористайтеся його звичайним механізмом і перезапустіть Home Assistant.
 
 ## Налаштування та ротація PAT
 
@@ -100,7 +100,7 @@ PAT і власний CA зберігаються в записі інтегра
 | Застарілий peer залишається | Дочекайтеся 10 успішних знімків без нього; перевірте **Налаштування > Виправлення**. |
 | Підключено, але трафік не проходить | Перевірте клієнти NetBird, маршрути, DNS, політики й кінцевий пристрій. |
 
-Щоб видалити інтеграцію, видаліть її запис у **Налаштування > Пристрої та служби > NetBird**. Потім видаліть інсталяцію HACS або каталог `custom_components/netbird` та перезапустіть Home Assistant. Непотрібний PAT відкличте окремо в NetBird. Для історії Home Assistant і резервних копій діють окремі правила зберігання.
+Щоб видалити інтеграцію, видаліть її запис у **Налаштування > Пристрої та служби > NetBird HA Monitor**. Потім видаліть інсталяцію HACS або каталог `custom_components/netbird` та перезапустіть Home Assistant. Непотрібний PAT відкличте окремо в NetBird. Для історії Home Assistant і резервних копій діють окремі правила зберігання.
 
 ## API та обмеження
 

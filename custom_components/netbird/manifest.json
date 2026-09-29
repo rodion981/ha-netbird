@@ -1,6 +1,6 @@
 {
   "domain": "netbird",
-  "name": "NetBird",
+  "name": "NetBird HA Monitor",
   "codeowners": ["@rodion981"],
   "config_flow": true,
   "dependencies": [],

@@ -14,7 +14,7 @@
 [**English**](README.md) | [Українською](README.uk.md)
 
 <p align="center">
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open NetBird in HACS"></a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=rodion981&amp;repository=ha-netbird&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open NetBird HA Monitor in HACS"></a>
 </p>
 
 NetBird for Home Assistant is an independently maintained, read-only custom integration for [NetBird](https://netbird.io/), using either NetBird Cloud or an explicit self-hosted HTTPS endpoint. It shows account and peer status plus current Networks, Resources, and Routers topology from the Management API. A peer marked connected is connected to the Management Service; this does **not** prove end-to-end VPN reachability.
@@ -48,9 +48,9 @@ Use the HACS button above or:
 
 1. Open **HACS > Custom repositories**.
 2. Add `https://github.com/rodion981/ha-netbird` as **Integration**.
-3. Open **NetBird** and select **Download**.
+3. Open **NetBird HA Monitor** and select **Download**.
 4. Restart Home Assistant.
-5. Open **Settings > Devices & services > Add integration**, select **NetBird**, choose Cloud or self-hosted, and enter the requested connection data.
+5. Open **Settings > Devices & services > Add integration**, select **NetBird HA Monitor**, choose Cloud or self-hosted, and enter the requested connection data.
 
 The button opens HACS; downloading and setting up the integration remain separate steps. If HACS cannot access the repository, install manually.
 
@@ -67,7 +67,7 @@ Home Assistant device pages link to the matching dashboard page only when a dash
 
 ### Manual installation and upgrades
 
-Copy `custom_components/netbird` into the Home Assistant configuration directory as `custom_components/netbird`. Restart Home Assistant and add **NetBird** under **Devices & services**. To upgrade manually, back up your configuration, replace that directory with a chosen version, and restart. For HACS upgrades, use the HACS update flow and restart Home Assistant.
+Copy `custom_components/netbird` into the Home Assistant configuration directory as `custom_components/netbird`. Restart Home Assistant and add **NetBird HA Monitor** under **Devices & services**. To upgrade manually, back up your configuration, replace that directory with a chosen version, and restart. For HACS upgrades, use the HACS update flow and restart Home Assistant.
 
 ## Configuration and PAT rotation
 
@@ -100,7 +100,7 @@ The PAT and any custom CA bundle are stored in the Home Assistant config entry; 
 | Stale peer remains | Wait for 10 successful missing-peer snapshots; check **Settings > Repairs**. |
 | Connected but traffic fails | Check NetBird clients, routing, DNS, policy, and destination directly. |
 
-To remove the integration, delete its entry in **Settings > Devices & services > NetBird**. Remove the HACS installation or manual `custom_components/netbird` directory afterward and restart. Revoke an unused PAT separately in NetBird. Home Assistant history and backups have separate retention policies.
+To remove the integration, delete its entry in **Settings > Devices & services > NetBird HA Monitor**. Remove the HACS installation or manual `custom_components/netbird` directory afterward and restart. Revoke an unused PAT separately in NetBird. Home Assistant history and backups have separate retention policies.
 
 ## API contract and limits
 
