@@ -27,7 +27,7 @@
         }
       },
       "reauth_confirm": {
-        "title": "Повторне підключення до NetBird Cloud",
+        "title": "Повторне підключення до NetBird",
         "description": "Введіть новий персональний токен доступу для того самого облікового запису NetBird.",
         "data": {
           "api_token": "Персональний токен доступу"
@@ -35,7 +35,7 @@
       },
       "reconfigure": {
         "title": "Переналаштувати NetBird",
-        "description": "Введіть нові параметри того самого облікового запису NetBird. Зміни зберігаються лише після перевірки повного контракту API.",
+        "description": "Введіть нові параметри того самого облікового запису NetBird. Зміни зберігаються лише після перевірки підключення.",
         "data": {
           "api_url": "URL API",
           "dashboard_url": "URL панелі",
@@ -62,7 +62,7 @@
       "reauth_account_mismatch": "Персональний токен доступу належить іншому обліковому запису NetBird.",
       "reauth_successful": "Автентифікацію NetBird успішно оновлено.",
       "reconfigure_account_mismatch": "Персональний токен доступу належить іншому обліковому запису NetBird.",
-      "reconfigure_successful": "Токен доступу NetBird успішно оновлено."
+      "reconfigure_successful": "Параметри NetBird успішно оновлено."
     }
   },
   "exceptions": {

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from dataclasses import replace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,6 +11,7 @@ from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped]
     MockConfigEntry,
 )
@@ -498,3 +500,54 @@ async def test_foreign_device_association_blocks_topology_cleanup(
     await hass.async_block_till_done()
 
     assert devices.async_get(resource_device.id) is not None
+
+
+@pytest.mark.parametrize("reload_entry", [False, True])
+async def test_peer_cleanup_preserves_active_topology(
+    hass: HomeAssistant, topology_client: MagicMock, reload_entry: bool
+) -> None:
+    """Peer absences must never classify network/resource devices as peers."""
+    entry = await _setup(hass)
+    if reload_entry:
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    before = {
+        entity.unique_id: entity.entity_id
+        for entity in er.async_entries_for_config_entry(registry, entry.entry_id)
+        if ":network:" in entity.unique_id
+    }
+    for _ in range(11):
+        await entry.runtime_data.coordinator.async_refresh()
+        await hass.async_block_till_done()
+    after = {
+        entity.unique_id: entity.entity_id
+        for entity in er.async_entries_for_config_entry(registry, entry.entry_id)
+        if ":network:" in entity.unique_id
+    }
+    assert after == before
+    assert not [key for key in ir.async_get(hass).issues if key[0] == DOMAIN]
+
+
+async def test_resource_name_refresh_preserves_user_name_and_entity_id(
+    hass: HomeAssistant, topology_client: MagicMock
+) -> None:
+    entry = await _setup(hass)
+    registry = er.async_get(hass)
+    unique_id = f"{ACCOUNT}:network:network-1:resource:resource-1:address"
+    entity_id = _entity_id(hass, "sensor", unique_id)
+    entity = registry.async_get(entity_id)
+    assert entity is not None
+    assert entity.device_id is not None
+    devices = dr.async_get(hass)
+    devices.async_update_device(entity.device_id, name_by_user="My resource")
+    topology_client.async_get_network_resources.return_value = (
+        replace(RESOURCE, name="Renamed resource"),
+    )
+    await entry.runtime_data.topology_coordinator.async_refresh()
+    await hass.async_block_till_done()
+    device = devices.async_get(entity.device_id)
+    assert device is not None
+    assert device.name == "Renamed resource"
+    assert device.name_by_user == "My resource"
+    assert _entity_id(hass, "sensor", unique_id) == entity_id

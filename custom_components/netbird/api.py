@@ -17,6 +17,7 @@ from aiohttp import (
 )
 
 from .const import API_BASE_URL, API_TIMEOUT_SECONDS
+from .deployment import NetBirdBlockedAddressError
 from .models import (
     NetBirdAccount,
     NetBirdNetwork,
@@ -82,6 +83,10 @@ class NetBirdTimeoutError(NetBirdTransportError):
 
 class NetBirdTlsError(NetBirdTransportError):
     """TLS verification failed while connecting to NetBird."""
+
+
+class NetBirdAddressError(NetBirdTransportError):
+    """The self-hosted API resolved to a blocked address."""
 
 
 class NetBirdDataError(NetBirdUpdateError):
@@ -210,6 +215,8 @@ class NetBirdApiClient:
                     ) from err
         except NetBirdError:
             raise
+        except NetBirdBlockedAddressError:
+            raise NetBirdAddressError("NetBird API address is blocked") from None
         except TimeoutError as err:
             raise NetBirdTimeoutError("NetBird API request timed out") from err
         except (ClientConnectorCertificateError, ClientConnectorSSLError) as err:

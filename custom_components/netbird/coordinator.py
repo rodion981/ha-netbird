@@ -1,4 +1,4 @@
-"""Coordinated NetBird Cloud peer refresh."""
+"""Coordinated NetBird peer refresh."""
 
 from __future__ import annotations
 
@@ -25,10 +25,10 @@ from .models import NetBirdPeer
 _LOGGER = logging.getLogger(__name__)
 
 _FAILURE_MESSAGES = {
-    "insufficient_permissions": "NetBird Cloud permission denied",
-    "invalid_response": "NetBird Cloud response is invalid",
-    "cannot_connect": "NetBird Cloud connection failed",
-    "unknown": "Unexpected NetBird Cloud failure",
+    "insufficient_permissions": "NetBird permission denied",
+    "invalid_response": "NetBird response is invalid",
+    "cannot_connect": "NetBird connection failed",
+    "unknown": "Unexpected NetBird failure",
 }
 
 

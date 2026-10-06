@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -505,3 +506,26 @@ def test_entity_translation_keys_match_descriptions() -> None:
         for key, description in descriptions.items():
             assert description["name"]
             assert description["name"] != english["entity"][platform][key]["name"]
+
+
+async def test_peer_metadata_refresh_preserves_user_name_and_identity(
+    hass: HomeAssistant, cloud_client: MagicMock
+) -> None:
+    entry = await _setup(hass)
+    entity = _entity(hass, PEER.id, "connected")
+    assert entity is not None
+    assert entity.device_id is not None
+    devices = dr.async_get(hass)
+    devices.async_update_device(entity.device_id, name_by_user="My peer")
+    cloud_client.async_get_peers.return_value = (
+        replace(PEER, name="Renamed peer", version="0.1-test"),
+        MINIMAL_PEER,
+    )
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    device = devices.async_get(entity.device_id)
+    assert isinstance(device, dr.DeviceEntry)
+    assert device.name == "Renamed peer"
+    assert device.sw_version == "0.1-test"
+    assert device.name_by_user == "My peer"
+    assert _entity(hass, PEER.id, "connected") == entity

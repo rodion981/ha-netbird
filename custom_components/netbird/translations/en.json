@@ -27,7 +27,7 @@
         }
       },
       "reauth_confirm": {
-        "title": "Reconnect NetBird Cloud",
+        "title": "Reconnect NetBird",
         "description": "Enter a replacement personal access token for the same NetBird account.",
         "data": {
           "api_token": "Personal access token"
@@ -35,7 +35,7 @@
       },
       "reconfigure": {
         "title": "Reconfigure NetBird",
-        "description": "Enter replacement settings for the same NetBird account. Changes are saved only after the complete API contract passes.",
+        "description": "Enter replacement settings for the same NetBird account. Changes are saved only after the connection is validated.",
         "data": {
           "api_url": "API URL",
           "dashboard_url": "Dashboard URL",
@@ -62,7 +62,7 @@
       "reauth_account_mismatch": "The personal access token belongs to a different NetBird account.",
       "reauth_successful": "NetBird authentication was updated successfully.",
       "reconfigure_account_mismatch": "The personal access token belongs to a different NetBird account.",
-      "reconfigure_successful": "The NetBird access token was updated successfully."
+      "reconfigure_successful": "NetBird settings were updated successfully."
     }
   },
   "exceptions": {

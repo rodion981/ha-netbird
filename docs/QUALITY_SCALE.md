@@ -1,8 +1,8 @@
 # NetBird integration quality evidence
 
-<!-- netbird-doc-contract: {"release":"1.0.1","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.2","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 
-This is the project's evidence checklist for release `1.0.1`, covering NetBird Cloud and self-hosted deployments. It is **not** a Home Assistant Core quality-tier award. The protected self-hosted lifecycle check passed, with the non-empty self-hosted peer case explicitly retained as a release-evidence limitation below. Recheck the [current Home Assistant rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/) before claiming a tier. Evidence below points to repository code, tests, and named hosted runs, not to a production installation.
+This is the project's evidence checklist for release `1.0.2`, covering NetBird Cloud and self-hosted deployments. It is **not** a Home Assistant Core quality-tier award. The protected self-hosted lifecycle check passed, with the non-empty self-hosted peer case explicitly retained as a release-evidence limitation below. Recheck the [current Home Assistant rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/) before claiming a tier. Evidence below points to repository code, tests, and named hosted runs, not to a production installation.
 
 ## Reproducible gate
 
@@ -18,12 +18,14 @@ uv run python -m pytest -q --cov=custom_components.netbird --cov-report=term-mis
 
 On native Windows, run the first three `uv run` checks. Home Assistant runtime tests need Linux/WSL because its import path requires POSIX `fcntl`. CI also runs hassfest, HACS validation, and Gitleaks. A local pass does not establish those hosted results or a live API pass. Use opt-in, environment-provided disposable credentials for any later live check; never commit the response, diagnostics, token, identifiers, names, addresses, or private URLs.
 
+Release `1.0.2` additionally tests active topology retention across peer refresh/reload, connection-time DNS filtering, private dual-stack answers, owned-session cleanup, and identity-preserving metadata updates. These are synthetic/mocked runtime checks. The historical live run below does not validate this new transport; a fresh real self-hosted deployment and frontend installation have not been exercised for this patch.
+
 Evidence classes remain separate:
 
 - Local static evidence: Ruff and mypy run in the developer environment.
 - Local runtime evidence: pytest runs in Linux/WSL against anonymized fixtures and mocked responses.
-- Hosted evidence: release publication requires the v1.0.1 tag workflow to pass quality, hassfest, HACS validation, and Gitleaks on the release commit.
-- Release evidence: [v1.0.1](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.1), its tag workflow, the official NetBird brand asset, and the direct HACS custom-repository button form the release evidence.
+- Hosted evidence: release publication requires the v1.0.2 tag workflow to pass quality, hassfest, HACS validation, and Gitleaks on the release commit.
+- Release evidence: [v1.0.2](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.2), its tag workflow, the official NetBird brand asset, and the direct HACS custom-repository button form the release evidence.
 - Live API evidence: the protected [manual live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) passed on 25 September 2026 for the account, peer, network, resource, router, and peer-group input shapes used by v0.3.0. This is point-in-time shape evidence only; it does not verify derived entities or reachability.
 - Self-hosted live evidence: on 27 September 2026, a disposable NetBird `0.79.0` combined server behind an Nginx HTTPS reverse proxy passed private-CA setup, config-entry load, peer and topology polling, reload, same-account PAT reauth, same-account endpoint/dashboard reconfigure, untrusted-CA failure, and fail-closed HTTPS redirect handling. The account contained one Network, one Resource, and one group-based Router. The peer endpoint succeeded with an empty list; a non-empty peer on this self-hosted deployment was not separately exercised. Public DNS, Let's Encrypt, frontend rendering, installation through HACS, and end-to-end VPN reachability were not tested. The disposable PAT, CA, URL, identifiers, response bodies, containers, volume, and test harness were removed after the run.
 - Frontend and installation evidence must be recorded separately from automated test results when performed.
@@ -43,7 +45,7 @@ Evidence classes remain separate:
 | Allowlisted diagnostics | [diagnostics.py](../custom_components/netbird/diagnostics.py), [test_diagnostics.py](../tests/test_diagnostics.py) |
 | Documentation for setup, removal, updates, entities, uses, and limitations | [English README](../README.md), [Ukrainian README](../README.uk.md) |
 | Runtime end-to-end behavior within Home Assistant tests | [test_mvp_integration.py](../tests/test_mvp_integration.py) |
-| Async API with injected Home Assistant web session | [api.py](../custom_components/netbird/api.py), [__init__.py](../custom_components/netbird/__init__.py), [test_api.py](../tests/test_api.py) |
+| Async API with injected sessions: shared HA Cloud session and owned self-hosted guarded resolver | [api.py](../custom_components/netbird/api.py), [__init__.py](../custom_components/netbird/__init__.py), [test_api.py](../tests/test_api.py) |
 | Explicit Cloud/self-hosted profiles, HTTPS-origin normalization, private CA verification, fail-closed redirects, and identity-preserving v2-to-v3 migration | [deployment.py](../custom_components/netbird/deployment.py), [config_flow.py](../custom_components/netbird/config_flow.py), [test_deployment.py](../tests/test_deployment.py), [test_config_flow.py](../tests/test_config_flow.py) |
 | Native dynamic dashboard without third-party cards or generated entity IDs | [dashboard example](../examples/netbird-dashboard.yaml), [test_dashboard_example.py](../tests/test_dashboard_example.py) |
 

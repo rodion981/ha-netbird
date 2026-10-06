@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import override
 
+from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -54,6 +56,27 @@ class NetBirdPeerEntity(CoordinatorEntity[NetBirdPeerCoordinator]):
             (peer for peer in self.coordinator.data if peer.id == self._peer_id),
             None,
         )
+
+    @callback
+    @override
+    def _handle_coordinator_update(self) -> None:
+        """Refresh device metadata without changing identity or user names."""
+        peer = self.peer
+        if (
+            self.coordinator.last_update_success
+            and peer is not None
+            and self.device_entry
+        ):
+            registry = dr.async_get(self.hass)
+            device = registry.async_get(self.device_entry.id)
+            name = peer.name or peer.id
+            if isinstance(device, dr.DeviceEntry) and (
+                device.name != name or device.sw_version != peer.version
+            ):
+                registry.async_update_device(
+                    device.id, name=name, sw_version=peer.version
+                )
+        super()._handle_coordinator_update()
 
     @property
     @override

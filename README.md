@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird for Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.1","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.2","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Monitor NetBird Cloud or self-hosted peers and Networks from Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Project status
 
-[Version `1.0.1`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.1) adds responsive English and Ukrainian dashboard examples and keeps peer, network, and resource discovery stable while entities are unavailable. It retains the explicit NetBird Cloud and self-hosted deployment profiles, custom CA trust, strict redirect handling, Networks topology, and group-aware routing availability from `1.0.0`. Install it as a HACS custom repository or manually. The HACS button opens this repository directly; it does not imply listing in the HACS default store.
+[Version `1.0.2`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.2) fixes peer cleanup deleting active Network resources, validates self-hosted DNS answers at connection time, and refreshes device names and peer client versions without changing identity. It retains Cloud and self-hosted monitoring, private CA trust, group-aware routing availability, and the responsive English/Ukrainian dashboards. Install it as a HACS custom repository or manually; this does not imply listing in the HACS default store.
 
 ## Features
 
@@ -89,7 +89,7 @@ After 10 consecutive **successful** snapshots omit a peer, its integration-owned
 
 ## Privacy and troubleshooting
 
-The PAT and any custom CA bundle are stored in the Home Assistant config entry; the PAT is sent only to the configured API origin for read-only requests. Every request verifies HTTPS, has a 10-second timeout, and refuses redirects while authorization is attached. Protect backups and never share the PAT. Enabled peer IP, hostname, DNS label, operating system, and resource address entities are visible to Home Assistant Recorder and may appear in history and backups. The integration adds no separate persistent database. Diagnostics expose only deployment class, whether a custom CA exists, versions, refresh status/error classes, and aggregate counts; never tokens, identities, names, addresses, URLs, certificates, redirect targets, or raw responses. Review any diagnostic export before sharing.
+The PAT and any custom CA bundle are stored in the Home Assistant config entry; the PAT is sent only to the configured API origin for read-only requests. Every request verifies HTTPS, has a 10-second timeout, and refuses redirects while authorization is attached. Self-hosted hostnames are revalidated on load, and every DNS answer used for a new connection is checked before opening a socket. Private LAN and IPv6 ULA addresses remain supported. Cloud uses the shared Home Assistant HTTP session; self-hosted sessions own a guarded resolver and close on unload or setup failure. Protect backups and never share the PAT. Enabled peer IP, hostname, DNS label, operating system, and resource address entities are visible to Home Assistant Recorder and may appear in history and backups. The integration adds no separate persistent database. Diagnostics expose only deployment class, whether a custom CA exists, versions, refresh status/error classes, and aggregate counts; never tokens, identities, names, addresses, URLs, certificates, redirect targets, or raw responses. Review any diagnostic export before sharing.
 
 | Symptom | Check |
 | --- | --- |

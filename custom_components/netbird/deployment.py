@@ -40,6 +40,10 @@ class NetBirdCertificateError(NetBirdDeploymentError):
     """A custom CA bundle is invalid or unsafe."""
 
 
+class NetBirdResolutionError(NetBirdUrlError):
+    """A deployment hostname could not currently be resolved."""
+
+
 @dataclass(frozen=True, slots=True)
 class NetBirdDeployment:
     """Resolved connection settings for one config entry."""
@@ -103,9 +107,11 @@ async def async_validate_https_origin(hass: HomeAssistant, value: str) -> str:
             socket.SOCK_STREAM,
         )
     except OSError as err:
-        raise NetBirdUrlError("NetBird URL hostname could not be resolved") from err
+        raise NetBirdResolutionError(
+            "NetBird URL hostname could not be resolved"
+        ) from err
     if not results:
-        raise NetBirdUrlError("NetBird URL hostname could not be resolved")
+        raise NetBirdResolutionError("NetBird URL hostname could not be resolved")
     for result in results:
         _reject_blocked_ip(ipaddress.ip_address(result[4][0]))
     return origin
@@ -156,6 +162,7 @@ async def async_resolve_deployment(
         dashboard_url = normalize_https_origin(dashboard_value)
     if ca_value is not None and not isinstance(ca_value, str):
         raise NetBirdCertificateError("NetBird CA bundle is invalid")
+    api_url = await async_validate_https_origin(hass, api_url)
     ssl_context = await hass.async_add_executor_job(build_ssl_context, ca_value)
     return NetBirdDeployment(
         deployment_type=DEPLOYMENT_SELF_HOSTED,
