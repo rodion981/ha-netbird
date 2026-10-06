@@ -14,7 +14,6 @@ from homeassistant.exceptions import (
 )
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
 from .api import (
@@ -32,11 +31,16 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import NetBirdPeerCoordinator
-from .deployment import NetBirdDeploymentError, async_resolve_deployment
+from .deployment import (
+    NetBirdDeploymentError,
+    NetBirdResolutionError,
+    async_resolve_deployment,
+)
 from .lifecycle import async_setup_peer_lifecycle
 from .models import NetBirdAccount
 from .topology import NetBirdTopologyCoordinator
 from .topology_lifecycle import async_setup_topology_lifecycle
+from .transport import async_get_netbird_session
 
 PLATFORMS = (Platform.BINARY_SENSOR, Platform.SENSOR)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -107,11 +111,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: NetBirdConfigEntry) -> b
 
     try:
         deployment = await async_resolve_deployment(hass, entry.data)
+    except NetBirdResolutionError:
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN, translation_key="cannot_connect"
+        ) from None
     except NetBirdDeploymentError as err:
         raise ConfigEntryError("NetBird deployment profile is invalid") from err
 
+    session = async_get_netbird_session(hass, deployment)
+    if deployment.deployment_type != DEPLOYMENT_CLOUD:
+        entry.async_on_unload(session.close)
     client = NetBirdApiClient(
-        async_get_clientsession(hass),
+        session,
         token,
         base_url=deployment.api_url,
         ssl_context=deployment.ssl_context,

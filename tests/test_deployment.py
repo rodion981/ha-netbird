@@ -171,19 +171,43 @@ async def test_resolve_cloud_defaults_for_legacy_entry(hass: HomeAssistant) -> N
 
 
 async def test_resolve_explicit_self_hosted_profile(hass: HomeAssistant) -> None:
-    deployment = await async_resolve_deployment(
-        hass,
-        {
-            CONF_DEPLOYMENT_TYPE: DEPLOYMENT_SELF_HOSTED,
-            CONF_API_URL: "https://NETBIRD.example:443/",
-            CONF_DASHBOARD_URL: "",
-            CONF_CA_CERTIFICATE: "",
-        },
-    )
+    with patch(
+        "custom_components.netbird.deployment.socket.getaddrinfo",
+        return_value=[(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("192.0.2.10", 443))],
+    ):
+        deployment = await async_resolve_deployment(
+            hass,
+            {
+                CONF_DEPLOYMENT_TYPE: DEPLOYMENT_SELF_HOSTED,
+                CONF_API_URL: "https://NETBIRD.example:443/",
+                CONF_DASHBOARD_URL: "",
+                CONF_CA_CERTIFICATE: "",
+            },
+        )
 
     assert deployment.api_url == "https://netbird.example"
     assert deployment.dashboard_url is None
     assert deployment.custom_ca is False
+
+
+async def test_stored_api_origin_rechecks_dns_on_reload(hass: HomeAssistant) -> None:
+    """A hostname becoming loopback must fail before an authenticated request."""
+    with (
+        patch(
+            "custom_components.netbird.deployment.socket.getaddrinfo",
+            return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("127.0.0.1", 443))
+            ],
+        ),
+        pytest.raises(NetBirdBlockedAddressError),
+    ):
+        await async_resolve_deployment(
+            hass,
+            {
+                CONF_DEPLOYMENT_TYPE: DEPLOYMENT_SELF_HOSTED,
+                CONF_API_URL: "https://netbird.example",
+            },
+        )
 
 
 @pytest.mark.parametrize(

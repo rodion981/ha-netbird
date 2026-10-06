@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird для Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.1","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.2","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Стан peer-пристроїв і Networks NetBird Cloud або власного сервера у Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird для Home Assistant це незалежна read-only інтеграц
 
 ## Стан проєкту
 
-[Версія `1.0.1`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.1) додає адаптивні англійський та український приклади dashboard і зберігає стабільне виявлення peer, network та resource entities у стані `unavailable`. Вона зберігає явні профілі NetBird Cloud і self-hosted, довіру до власного CA, суворе блокування redirect, топологію Networks і доступність маршрутизації з підтримкою груп із `1.0.0`. Встановлюйте її через кастомний репозиторій HACS або вручну. Кнопка HACS відкриває цей репозиторій; вона не означає, що інтеграція є в стандартному каталозі HACS.
+[Версія `1.0.2`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.2) виправляє видалення активних Network resources під час очищення peers, перевіряє DNS-відповіді self-hosted сервера безпосередньо перед підключенням і оновлює назви пристроїв та версії peer-клієнтів без зміни ідентифікаторів. Збережено Cloud і self-hosted моніторинг, довіру до власного CA, групову маршрутизацію та адаптивні EN/UK dashboards. Встановлюйте через кастомний репозиторій HACS або вручну; це не означає наявність у стандартному каталозі HACS.
 
 ## Можливості
 
@@ -88,6 +88,8 @@ Connected routing peers визначає ввімкнені routers, адрес�
 Після 10 послідовних **успішних** знімків без peer-пристрою інтеграція видаляє належні їй записи реєстру. Помилки не збільшують лічильник; повернення пристрою його скидає. Лічильник зберігається лише в пам'яті, тому перезавантаження може відкласти очищення. Якщо належність пристрою або сутностей неоднозначна, видалення блокується і з'являється повідомлення Repairs. Історія, вже записана Home Assistant Recorder, зберігається за його правилами.
 
 ## Приватність і діагностика
+
+Self-hosted hostname повторно перевіряється під час завантаження, а всі DNS-адреси нового з’єднання перевіряються до відкриття сокета. Приватні LAN та IPv6 ULA адреси підтримуються. Cloud використовує спільну HTTP session Home Assistant; self-hosted має окрему session із захищеним resolver, яка закривається після невдалого setup або unload.
 
 PAT і власний CA зберігаються в записі інтеграції Home Assistant; PAT надсилається лише налаштованому API origin для read-only запитів. Кожен запит перевіряє HTTPS, має 10-секундний timeout і не виконує redirect із заголовком авторизації. Захищайте резервні копії та не передавайте PAT. Увімкнені сутності IP, hostname, DNS label, операційної системи й адреси ресурсу доступні Recorder та можуть потрапити в історію і резервні копії. Інтеграція не створює окремої бази. Діагностика містить лише тип розгортання, ознаку власного CA, версії, стани/класи помилок і агреговані лічильники; токенів, ID, імен, адрес, URL, сертифікатів, redirect targets і сирих відповідей немає.
 

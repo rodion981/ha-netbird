@@ -36,6 +36,7 @@ class NetBirdPeerLifecycle:
             for domain, identifier in device.identifiers
             if domain == DOMAIN
             and identifier.startswith(identifier_prefix)
+            and not identifier.startswith(f"{identifier_prefix}network:")
             and len(identifier) > len(identifier_prefix)
         }
         present_peer_ids = {peer.id for peer in self._coordinator.data}

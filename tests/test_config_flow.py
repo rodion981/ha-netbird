@@ -22,6 +22,7 @@ from pytest_homeassistant_custom_component.common import (  # type: ignore[impor
 
 from custom_components.netbird import async_migrate_entry
 from custom_components.netbird.api import (
+    NetBirdAddressError,
     NetBirdAuthenticationError,
     NetBirdJsonError,
     NetBirdPermissionError,
@@ -43,6 +44,10 @@ from custom_components.netbird.const import (
     DEPLOYMENT_CLOUD,
     DEPLOYMENT_SELF_HOSTED,
     DOMAIN,
+)
+from custom_components.netbird.deployment import (
+    NetBirdBlockedAddressError,
+    NetBirdResolutionError,
 )
 from custom_components.netbird.models import NetBirdAccount, NetBirdSnapshot
 
@@ -378,6 +383,7 @@ async def test_duplicate_account_aborts_with_different_pat(
         (lambda: NetBirdServerError(503), "cannot_connect"),
         (lambda: NetBirdRedirectError(302), "redirect_not_allowed"),
         (lambda: NetBirdTlsError("safe"), "invalid_tls"),
+        (lambda: NetBirdAddressError("safe"), "blocked_address"),
         (lambda: NetBirdJsonError("safe"), "invalid_response"),
         (lambda: NetBirdSchemaError("safe"), "invalid_response"),
         (lambda: RuntimeError(NEW_TOKEN), "unknown"),
@@ -466,6 +472,46 @@ async def test_reauth_rejects_account_mismatch_without_mutation(
     assert result["reason"] == "reauth_account_mismatch"
     assert entry.data[CONF_API_TOKEN] == OLD_TOKEN
     schedule_reload.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("failure", "expected_error"),
+    [
+        (NetBirdBlockedAddressError("safe"), "blocked_address"),
+        (NetBirdResolutionError("safe"), "cannot_connect"),
+    ],
+)
+async def test_reauth_dns_failure_preserves_credentials(
+    hass: HomeAssistant, failure: Exception, expected_error: str
+) -> None:
+    """DNS failures cannot replace a stored PAT or schedule a reload."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_ACCOUNT_ID: ACCOUNT_ID, CONF_API_TOKEN: OLD_TOKEN},
+        unique_id=ACCOUNT_ID,
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch(
+            "custom_components.netbird.config_flow.async_resolve_deployment",
+            new=AsyncMock(side_effect=failure),
+        ),
+        patch.object(hass.config_entries, "async_schedule_reload") as reload_entry,
+        patch("custom_components.netbird.config_flow.NetBirdApiClient") as client,
+    ):
+        start = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id},
+            data=entry.data,
+        )
+        result = await hass.config_entries.flow.async_configure(
+            start["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+        )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": expected_error}
+    assert entry.data[CONF_API_TOKEN] == OLD_TOKEN
+    reload_entry.assert_not_called()
+    client.assert_not_called()
 
 
 @pytest.mark.parametrize(

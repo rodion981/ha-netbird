@@ -138,9 +138,10 @@ class NetBirdTopologyLifecycle:
                 for entity in entity_registry.entities.values()
                 if entity.device_id == device.id
             }
-            if linked != {
-                entity.entity_id for entity in owned
-            } or device.config_entries != {self._entry.entry_id}:
+            if (
+                linked != {entity.entity_id for entity in owned}
+                or device.config_entry_id != self._entry.entry_id
+            ):
                 return False
         for entity in owned:
             entity_registry.async_remove(entity.entity_id)

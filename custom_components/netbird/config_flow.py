@@ -10,9 +10,9 @@ from typing import Any, override
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.helpers import selector
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import (
+    NetBirdAddressError,
     NetBirdApiClient,
     NetBirdAuthenticationError,
     NetBirdDataError,
@@ -41,12 +41,14 @@ from .deployment import (
     NetBirdCertificateError,
     NetBirdDeployment,
     NetBirdDeploymentError,
+    NetBirdResolutionError,
     NetBirdUrlError,
     async_resolve_deployment,
     async_validate_https_origin,
     build_ssl_context,
 )
 from .models import NetBirdSnapshot
+from .transport import async_netbird_session
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,17 +91,18 @@ class NetBirdConfigFlow(ConfigFlow, domain=DOMAIN):
         full_contract: bool,
     ) -> tuple[NetBirdSnapshot | None, str | None]:
         """Validate a PAT without exposing credentials or response data."""
-        client = NetBirdApiClient(
-            async_get_clientsession(self.hass),
-            token,
-            base_url=deployment.api_url,
-            ssl_context=deployment.ssl_context,
-        )
         try:
-            snapshot = await client.async_get_snapshot()
-            if full_contract:
-                await _async_validate_topology_contract(client)
-            return snapshot, None
+            async with async_netbird_session(self.hass, deployment) as session:
+                client = NetBirdApiClient(
+                    session,
+                    token,
+                    base_url=deployment.api_url,
+                    ssl_context=deployment.ssl_context,
+                )
+                snapshot = await client.async_get_snapshot()
+                if full_contract:
+                    await _async_validate_topology_contract(client)
+                return snapshot, None
         except NetBirdAuthenticationError:
             return None, "invalid_auth"
         except NetBirdPermissionError:
@@ -108,6 +111,8 @@ class NetBirdConfigFlow(ConfigFlow, domain=DOMAIN):
             return None, "redirect_not_allowed"
         except NetBirdTlsError:
             return None, "invalid_tls"
+        except NetBirdAddressError:
+            return None, "blocked_address"
         except NetBirdResponseError as err:
             if full_contract and err.status == 404:
                 return None, "unsupported_server"
@@ -254,6 +259,8 @@ class NetBirdConfigFlow(ConfigFlow, domain=DOMAIN):
                 error = "blocked_address"
             except NetBirdCertificateError:
                 error = "invalid_ca"
+            except NetBirdResolutionError:
+                error = "cannot_connect"
             except NetBirdDeploymentError:
                 error = "invalid_url"
             else:

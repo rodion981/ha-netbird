@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The project follows [Se
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-06
+
+### Fixed
+
+- Preserve active Network and Resource entities during peer cleanup, including after reload.
+- Revalidate stored self-hosted API hostnames and reject blocked DNS answers in the actual connection resolver before opening a socket.
+- Close owned self-hosted HTTP sessions after flow validation, failed setup, and unload; keep transient DNS failures retryable.
+- Refresh peer names/client versions and resource names without changing identifiers or user-defined names.
+- Use the current device registry ownership field during topology cleanup.
+- Align HACS display metadata and tests with NetBird HA Monitor; use deployment-neutral reauthentication and error text.
+
+### Validation
+
+- Add regression coverage for cross-coordinator cleanup, DNS changes, private dual-stack resolution, session ownership, and metadata updates.
+- Existing live NetBird and frontend evidence limitations remain explicitly documented.
+
 ## [1.0.1] - 2026-09-28
 
 ### Fixed
@@ -84,6 +100,7 @@ All notable changes to this project are documented here. The project follows [Se
 - Logs and diagnostics exclude tokens, raw API responses, private addresses, and peer identities.
 
 [0.1.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.1.0
+[1.0.2]: https://github.com/rodion981/ha-netbird/releases/tag/v1.0.2
 [0.2.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.2.0
 [0.3.0]: https://github.com/rodion981/ha-netbird/releases/tag/v0.3.0
 [1.0.0]: https://github.com/rodion981/ha-netbird/releases/tag/v1.0.0

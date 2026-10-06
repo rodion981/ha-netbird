@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import override
 
+from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -125,6 +127,22 @@ class NetBirdResourceEntity(CoordinatorEntity[NetBirdTopologyCoordinator]):
         return next(
             (item for item in network.resources if item.id == self._resource_id), None
         )
+
+    @callback
+    @override
+    def _handle_coordinator_update(self) -> None:
+        """Refresh resource names while preserving user overrides and identity."""
+        resource = self.resource
+        if (
+            self.coordinator.last_update_success
+            and resource is not None
+            and self.device_entry
+        ):
+            registry = dr.async_get(self.hass)
+            device = registry.async_get(self.device_entry.id)
+            if device is not None and device.name != resource.name:
+                registry.async_update_device(device.id, name=resource.name)
+        super()._handle_coordinator_update()
 
     @property
     @override
