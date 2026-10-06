@@ -45,7 +45,7 @@ async def test_integration_manifest_is_discoverable(hass: HomeAssistant) -> None
     integration = await async_get_integration(hass, DOMAIN)
 
     assert integration.domain == DOMAIN
-    assert integration.name == "NetBird"
+    assert integration.name == "NetBird HA Monitor"
 
 
 async def test_config_entry_setup_reload_and_unload(
@@ -140,7 +140,7 @@ def test_hacs_metadata() -> None:
     hacs = json.loads((REPOSITORY_ROOT / "hacs.json").read_text(encoding="utf-8"))
 
     assert hacs == {
-        "name": "NetBird",
+        "name": "NetBird HA Monitor",
         "homeassistant": "2026.9.3",
         "render_readme": True,
     }
