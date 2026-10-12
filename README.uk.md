@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird для Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.2","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.3","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Стан peer-пристроїв і Networks NetBird Cloud або власного сервера у Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird для Home Assistant це незалежна read-only інтеграц
 
 ## Стан проєкту
 
-[Версія `1.0.2`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.2) виправляє видалення активних Network resources під час очищення peers, перевіряє DNS-відповіді self-hosted сервера безпосередньо перед підключенням і оновлює назви пристроїв та версії peer-клієнтів без зміни ідентифікаторів. Збережено Cloud і self-hosted моніторинг, довіру до власного CA, групову маршрутизацію та адаптивні EN/UK dashboards. Встановлюйте через кастомний репозиторій HACS або вручну; це не означає наявність у стандартному каталозі HACS.
+[Версія `1.0.3`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.3) захищає debug-журнали топології, завершує паралельні запити після помилки, враховує паузи HTTP 429 і виправляє розділення облікових записів та користувацькі назви пристроїв в обох dashboards. Self-hosted форми коректно повідомляють про помилки DNS і некоректний CA з не-ASCII символами. Cloud/self-hosted моніторинг та ідентифікатори сутностей залишаються сумісними. Встановлюйте через кастомний репозиторій HACS або вручну; це не означає наявність у стандартному каталозі HACS.
 
 ## Можливості
 
@@ -61,7 +61,7 @@ Cloud використовує фіксовану адресу `https://api.netb
 1. Створіть порожній dashboard у Home Assistant.
 2. Відкрийте **Редактор сирої конфігурації** та вставте YAML із прикладу.
 
-Dashboard демонструє основні лічильники облікового запису, підключення, IP-адресу, час активності, доступність, стани SSH та ephemeral для пірів, місткість мереж і доступність маршрутизації ресурсів. Він використовує адаптивні підсумки замість широких таблиць і показує час у стислому локальному форматі. Відсутні сутності показуються як `—`; невідомі й недоступні значення відрізняються від `false` та нуля. Сторонні картки не потрібні.
+Dashboard демонструє основні лічильники облікового запису, підключення, IP-адресу, час активності, доступність, стани SSH та ephemeral для пірів, місткість мереж і доступність маршрутизації ресурсів. Він використовує адаптивні підсумки замість широких таблиць і показує час у стислому локальному форматі. Відсутні сутності показуються як `—`; невідомі й недоступні значення відрізняються від `false` та нуля. Сторонні картки не потрібні. Кожен обліковий запис має окремий огляд, а користувацькі назви пристроїв мають пріоритет. Для оновлення наявного dashboard замініть YAML прикладу окремо від оновлення інтеграції.
 
 Сторінки пристроїв Home Assistant містять посилання на dashboard лише коли його origin відомий: `/peers` для облікового запису, `/peer?id=<peer-id>`, `/network?id=<network-id>` або `/network?id=<network-id>&resource=<resource-id>`. Cloud використовує `app.netbird.io`; self-hosted використовує лише окремо введену адресу dashboard і ніколи не виводить її з API URL. Ідентифікатори кодуються окремо. Ці deep links працюють за принципом best effort, оскільки маршрути dashboard не є стабільним API-контрактом NetBird.
 
@@ -106,7 +106,7 @@ PAT і власний CA зберігаються в записі інтегра
 
 ## API та обмеження
 
-Інтеграція читає `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources` і `GET /api/networks/{id}/routers` за фіксованою Cloud-адресою або нормалізованим self-hosted HTTPS origin. Застарілий `/api/routes` не викликається, окремий запит груп не додається. Self-hosted сумісність визначається можливостями: setup перевіряє всі використані форми endpoint-ів, а не вгадує підтримку за версією сервера. Обов'язкові ID і поля топології перевіряються; необов'язкові peer-поля та поля груп можуть бути відсутніми або `null`. Після HTTP 429 або серверної помилки інтеграція чекає наступного опитування. Захищений [Cloud live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) від 25 вересня 2026 року є лише точковим Cloud-доказом форми API. Для self-hosted релізу потрібно окремо зафіксувати версію NetBird, тип HTTPS-розгортання, setup/reload/poll, reauth, reconfigure, помилку redirect/TLS і результат private CA без збереження приватних значень.
+Інтеграція читає `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources` і `GET /api/networks/{id}/routers` за фіксованою Cloud-адресою або нормалізованим self-hosted HTTPS origin. Застарілий `/api/routes` не викликається, окремий запит груп не додається. Self-hosted сумісність визначається можливостями: setup перевіряє всі використані форми endpoint-ів, а не вгадує підтримку за версією сервера. Обов'язкові ID і поля топології перевіряються; необов'язкові peer-поля та поля груп можуть бути відсутніми або `null`. Після HTTP 429 відповідний coordinator враховує коректну затримку або HTTP-дату `Retry-After`, але не опитує раніше за звичайний інтервал. HTTP 429 вкладеного endpoint зупиняє пакет запитів топології та зберігає попередній snapshot як недоступний; інші вкладені помилки залишаються локальними для відповідного розділу. Після серверної помилки інтеграція чекає наступного опитування. Захищений [Cloud live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) від 25 вересня 2026 року є лише точковим Cloud-доказом форми API. Для self-hosted релізу потрібно окремо зафіксувати версію NetBird, тип HTTPS-розгортання, setup/reload/poll, reauth, reconfigure, помилку redirect/TLS і результат private CA без збереження приватних значень.
 
 ## Розробка та підтримка
 

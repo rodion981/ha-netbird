@@ -22,6 +22,7 @@ from .api import (
     NetBirdTlsError,
     NetBirdUpdateError,
 )
+from .async_utils import async_gather_cancel_on_error
 from .const import (
     API_BASE_URL,
     CONF_ACCOUNT_ID,
@@ -220,6 +221,8 @@ class NetBirdConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         except NetBirdBlockedAddressError:
             return None, "blocked_address"
+        except NetBirdResolutionError:
+            return None, "cannot_connect"
         except NetBirdUrlError:
             return None, "invalid_url"
         except NetBirdCertificateError:
@@ -374,7 +377,7 @@ async def _async_validate_topology_contract(client: NetBirdApiClient) -> None:
         async with semaphore:
             await client.async_get_network_routers(network_id)
 
-    await asyncio.gather(
+    await async_gather_cancel_on_error(
         *(validate_resources(network.id) for network in networks),
         *(validate_routers(network.id) for network in networks),
     )

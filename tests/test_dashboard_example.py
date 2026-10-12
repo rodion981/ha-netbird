@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import yaml  # type: ignore[import-untyped]
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.template import Template
 from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped]
     MockConfigEntry,
@@ -216,3 +218,54 @@ async def test_dashboard_populated_sections_are_compact_and_operational(
     )
     assert "**Home LAN**" in degraded
     assert "Routers: **Unavailable/Unavailable**" in degraded
+
+    registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
+        registry.async_update_device(device.id, name_by_user=f"Custom {device.name}")
+    for path in (DASHBOARD_EN, DASHBOARD_UK):
+        renamed = "\n".join(
+            Template(content, hass).async_render(parse_result=False)
+            for content in _markdown_contents(_dashboard(path))
+        )
+        assert "**Custom Demo peer**" in renamed
+        assert "**Custom Home LAN**" in renamed
+        assert "**Custom Home subnet** · Custom Home LAN" in renamed
+
+
+@pytest.mark.parametrize("path", [DASHBOARD_EN, DASHBOARD_UK])
+def test_dashboard_overview_keeps_accounts_and_unknown_values_separate(
+    hass: HomeAssistant, path: Path
+) -> None:
+    """Account discovery does not rely on a device name or mix entry totals."""
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    sources: dict[str, dict[str, str]] = {}
+    for account, values in (
+        ("Office", {"peer_count": "7", "connected_peer_count": "3"}),
+        ("Lab", {"peer_count": "4", "connected_peer_count": "unavailable"}),
+    ):
+        entry = MockConfigEntry(domain=DOMAIN, title=account, unique_id=account)
+        entry.add_to_hass(hass)
+        device = devices.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, account)},
+            name="Changed account device name",
+        )
+        for key, value in values.items():
+            entity = entities.async_get_or_create(
+                "sensor",
+                DOMAIN,
+                f"{account}:{key}",
+                config_entry=entry,
+                device_id=device.id,
+            )
+            hass.states.async_set(entity.entity_id, value, {"netbird_key": key})
+            sources[entity.entity_id] = {"domain": DOMAIN}
+    content = _markdown_contents(_dashboard(path))[0]
+    with patch("homeassistant.helpers.entity.entity_sources", return_value=sources):
+        rendered = Template(content, hass).async_render(parse_result=False)
+    assert "Office" in rendered
+    assert "Lab" in rendered
+    assert "3 / 7" in rendered
+    assert "Unavailable / 4" in rendered or "Недоступно / 4" in rendered
+    assert "3 / 4" not in rendered

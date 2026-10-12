@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The project follows [Se
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-12
+
+### Fixed
+
+- Suppress private transport details and unexpected nested failures in topology debug logs.
+- Cancel and drain sibling topology/config-flow requests before returning on failure or cancellation.
+- Honor valid HTTP 429 Retry-After seconds and HTTP dates without shortening normal polling; nested rate limits retain the last snapshot as unavailable.
+- Separate account summaries and respect user-defined device names in both dashboard examples.
+- Report self-hosted DNS failures as connection errors and non-ASCII CA input as a certificate form error.
+
+### Validation
+
+- Add regression tests for exception privacy, request cleanup, retry hints, multi-account dashboard rendering, custom names, and self-hosted form errors.
+- Existing dashboards require a separate YAML update; entity/device identifiers and config-entry version remain unchanged.
+
 ## [1.0.2] - 2026-10-06
 
 ### Fixed

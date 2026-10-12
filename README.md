@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird for Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.2","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.3","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Monitor NetBird Cloud or self-hosted peers and Networks from Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,7 @@ NetBird for Home Assistant is an independently maintained, read-only custom inte
 
 ## Project status
 
-[Version `1.0.2`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.2) fixes peer cleanup deleting active Network resources, validates self-hosted DNS answers at connection time, and refreshes device names and peer client versions without changing identity. It retains Cloud and self-hosted monitoring, private CA trust, group-aware routing availability, and the responsive English/Ukrainian dashboards. Install it as a HACS custom repository or manually; this does not imply listing in the HACS default store.
+[Version `1.0.3`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.3) protects topology debug logs, drains concurrent requests after failure, honors HTTP 429 retry hints, and fixes account separation and custom device names in both dashboards. Self-hosted forms now report DNS failures and invalid non-ASCII CA input correctly. Cloud/self-hosted monitoring and all existing entity identities remain compatible. Install through a HACS custom repository or manually; this does not imply listing in the HACS default store.
 
 ## Features
 
@@ -61,7 +61,7 @@ The [English NetBird dashboard](examples/netbird-dashboard.yaml) and [Ukrainian 
 1. Create an empty dashboard in Home Assistant.
 2. Open its **Raw configuration editor** and paste the example YAML.
 
-The dashboard demonstrates the main account counts, peer connectivity, IP address, activity timestamps, accessibility, SSH and ephemeral state, network capacity, and resource routing availability. It uses wrapping summaries instead of wide tables and formats timestamps in concise local time. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card.
+The dashboard demonstrates the main account counts, peer connectivity, IP address, activity timestamps, accessibility, SSH and ephemeral state, network capacity, and resource routing availability. It uses wrapping summaries instead of wide tables and formats timestamps in concise local time. Missing entities render as `—`; unknown and unavailable remain distinct from `false` and zero. It requires no third-party dashboard card. Each account has a separate overview, and user-defined device names take precedence. To update an existing dashboard, replace its example YAML separately from the integration update.
 
 Home Assistant device pages link to the matching dashboard page only when a dashboard origin is known: `/peers` for the account, `/peer?id=<peer-id>`, `/network?id=<network-id>`, or `/network?id=<network-id>&resource=<resource-id>`. Cloud uses `app.netbird.io`; self-hosted setup uses only the separately entered dashboard origin and never infers it from the API URL. Identifiers are query-encoded independently. These links are best effort because dashboard routes are not a stable NetBird API contract.
 
@@ -104,7 +104,7 @@ To remove the integration, delete its entry in **Settings > Devices & services >
 
 ## API contract and limits
 
-The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at either the fixed Cloud origin or a normalized self-hosted HTTPS origin. It never calls deprecated `/api/routes` or adds a groups request. Self-hosted compatibility is capability-based: setup requires all consumed endpoint shapes instead of guessing support from a server version. Required IDs and topology fields are validated; optional peer and group fields may be absent or null. HTTP 429 and server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. Repository tests use anonymized fixtures and mocked responses. The protected [Cloud live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) from 25 September 2026 is point-in-time Cloud shape evidence only. Self-hosted release evidence must separately record the tested NetBird version, HTTPS deployment style, setup/reload/poll, reauth, reconfigure, redirect/TLS failure, and private-CA result without retaining private values.
+The integration reads `GET /api/accounts`, `GET /api/peers`, `GET /api/networks`, `GET /api/networks/{id}/resources`, and `GET /api/networks/{id}/routers` at either the fixed Cloud origin or a normalized self-hosted HTTPS origin. It never calls deprecated `/api/routes` or adds a groups request. Self-hosted compatibility is capability-based: setup requires all consumed endpoint shapes instead of guessing support from a server version. Required IDs and topology fields are validated; optional peer and group fields may be absent or null. HTTP 429 defers the affected coordinator using a valid `Retry-After` delay or HTTP date, never earlier than its normal polling interval. A nested topology 429 stops the batch and retains the previous snapshot as unavailable; ordinary nested failures remain section-local. Server failures wait for a later poll. NetBird [notes that API error handling is still beta](https://docs.netbird.io/api/guides/errors); a generic HTTP 404 is not interpreted as PAT expiry. Repository tests use anonymized fixtures and mocked responses. The protected [Cloud live API contract run](https://github.com/rodion981/ha-netbird/actions/runs/36159603786/job/108170984157) from 25 September 2026 is point-in-time Cloud shape evidence only. Self-hosted release evidence must separately record the tested NetBird version, HTTPS deployment style, setup/reload/poll, reauth, reconfigure, redirect/TLS failure, and private-CA result without retaining private values.
 
 ## Development and support
 
