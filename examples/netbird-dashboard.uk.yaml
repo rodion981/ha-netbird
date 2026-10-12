@@ -24,19 +24,30 @@ views:
                 {%- else -%}{{ states(entity_id) }}
                 {%- endif -%}
               {%- endmacro %}
-              {% set overview = namespace(peers=none, connected=none, networks=none, resources=none, enabled_resources=none, routers=none, enabled_routers=none) %}
+              {% set accounts = namespace(seeds=[], devices=[]) %}
               {% for entity_id in netbird_entities %}
                 {% set device = device_id(entity_id) %}
-                {% if device and device_attr(device, 'name') == 'NetBird account' %}
-                  {% set key = state_attr(entity_id, 'netbird_key') %}
-                  {% if key == 'peer_count' %}{% set overview.peers = entity_id %}{% endif %}
-                  {% if key == 'connected_peer_count' %}{% set overview.connected = entity_id %}{% endif %}
-                  {% if key == 'network_count' %}{% set overview.networks = entity_id %}{% endif %}
-                  {% if key == 'resource_count' %}{% set overview.resources = entity_id %}{% endif %}
-                  {% if key == 'enabled_resource_count' %}{% set overview.enabled_resources = entity_id %}{% endif %}
-                  {% if key == 'router_count' %}{% set overview.routers = entity_id %}{% endif %}
-                  {% if key == 'enabled_router_count' %}{% set overview.enabled_routers = entity_id %}{% endif %}
+                {% if device and device not in accounts.devices and state_attr(entity_id, 'netbird_key') in ['peer_count', 'connected_peer_count', 'network_count'] %}
+                  {% set accounts.devices = accounts.devices + [device] %}
+                  {% set accounts.seeds = accounts.seeds + [entity_id] %}
                 {% endif %}
+              {% endfor %}
+              {% for seed in accounts.seeds or [none] %}
+              {% set device = device_id(seed) if seed else none %}
+              {% if seed %}
+              ### {{ device_attr(device, 'name_by_user') or config_entry_attr(config_entry_id(seed), 'title') or device_attr(device, 'name') }}
+
+              {% endif %}
+              {% set overview = namespace(peers=none, connected=none, networks=none, resources=none, enabled_resources=none, routers=none, enabled_routers=none) %}
+              {% for entity_id in device_entities(device) if device %}
+                {% set key = state_attr(entity_id, 'netbird_key') %}
+                {% if key == 'peer_count' %}{% set overview.peers = entity_id %}{% endif %}
+                {% if key == 'connected_peer_count' %}{% set overview.connected = entity_id %}{% endif %}
+                {% if key == 'network_count' %}{% set overview.networks = entity_id %}{% endif %}
+                {% if key == 'resource_count' %}{% set overview.resources = entity_id %}{% endif %}
+                {% if key == 'enabled_resource_count' %}{% set overview.enabled_resources = entity_id %}{% endif %}
+                {% if key == 'router_count' %}{% set overview.routers = entity_id %}{% endif %}
+                {% if key == 'enabled_router_count' %}{% set overview.enabled_routers = entity_id %}{% endif %}
               {% endfor %}
               **🟢 {{ value(overview.connected) }} / {{ value(overview.peers) }} пірів підключено**
 
@@ -45,6 +56,8 @@ views:
               📦 Ресурси: **{{ value(overview.enabled_resources) }} / {{ value(overview.resources) }} увімкнено**
 
               🧭 Маршрутизатори: **{{ value(overview.enabled_routers) }} / {{ value(overview.routers) }} увімкнено**
+
+              {% endfor %}
 
       - type: grid
         cards:
@@ -110,7 +123,7 @@ views:
                 {% set warnings = namespace(items=[]) %}
                 {% if row.expired and is_state(row.expired, 'on') %}{% set warnings.items = warnings.items + ['⚠ Термін входу минув'] %}{% endif %}
                 {% if row.approval and is_state(row.approval, 'on') %}{% set warnings.items = warnings.items + ['⚠ Потрібне схвалення'] %}{% endif %}
-                {% set peer_name = device_attr(device, 'name') | default('Пір без назви', true) %}
+                {% set peer_name = (device_attr(device, 'name_by_user') or device_attr(device, 'name')) | default('Пір без назви', true) %}
                 {% set activity = '`' ~ value(row.ip) ~ '` · Востаннє онлайн: ' ~ short_time(row.seen) ~ ' · Вхід: ' ~ short_time(row.login) %}
                 {% set capabilities = 'Доступні піри: ' ~ value(row.accessible) ~ ' · SSH: ' ~ toggle(row.ssh) ~ ' · Ефемерний: ' ~ toggle(row.ephemeral) %}
                 {% if warnings.items %}{% set capabilities = capabilities ~ ' · ' ~ warnings.items | join(' · ') %}{% endif %}
@@ -154,7 +167,7 @@ views:
                   {% if key == 'router_count' %}{% set row.routers = entity_id %}{% endif %}
                   {% if key == 'enabled_router_count' %}{% set row.enabled_routers = entity_id %}{% endif %}
                 {% endfor %}
-                {% set network_name = device_attr(device, 'name') | default('Мережа без назви', true) %}
+                {% set network_name = (device_attr(device, 'name_by_user') or device_attr(device, 'name')) | default('Мережа без назви', true) %}
                 {% set details = 'Ресурси: **' ~ value(row.enabled_resources) ~ '/' ~ value(row.resources) ~ '** · Маршрутизатори: **' ~ value(row.enabled_routers) ~ '/' ~ value(row.routers) ~ '** · Підключені піри маршрутизації: **' ~ value(row.connected) ~ '**' %}
                 {% set network_rows.items = network_rows.items + ['- **' ~ network_name ~ '**  \n  ' ~ details] %}
               {% endfor %}
@@ -208,8 +221,8 @@ views:
                   {% if key == 'address' %}{% set row.address = entity_id %}{% endif %}
                 {% endfor %}
                 {% set parent = device_attr(device, 'via_device_id') %}
-                {% set resource_name = device_attr(device, 'name') | default('Ресурс без назви', true) %}
-                {% set network_name = device_attr(parent, 'name') if parent else '—' %}
+                {% set resource_name = (device_attr(device, 'name_by_user') or device_attr(device, 'name')) | default('Ресурс без назви', true) %}
+                {% set network_name = (device_attr(parent, 'name_by_user') or device_attr(parent, 'name')) if parent else '—' %}
                 {% set details = '`' ~ value(row.address) ~ '` · ' ~ value(row.type) ~ ' · ' ~ route_status(row.enabled, row.routing) %}
                 {% set resource_rows.items = resource_rows.items + ['- **' ~ resource_name ~ '** · ' ~ network_name ~ '  \n  ' ~ details] %}
               {% endfor %}

@@ -121,6 +121,8 @@ def build_ssl_context(ca_certificate: str | None) -> ssl.SSLContext | None:
     """Build a verifying SSL context from an optional PEM CA bundle."""
     if ca_certificate is None or not ca_certificate.strip():
         return None
+    if not ca_certificate.isascii():
+        raise NetBirdCertificateError("NetBird CA bundle must be ASCII PEM")
     if len(ca_certificate.encode("utf-8")) > MAX_CA_CERTIFICATE_BYTES:
         raise NetBirdCertificateError("NetBird CA bundle is too large")
     if "PRIVATE KEY" in ca_certificate.upper():

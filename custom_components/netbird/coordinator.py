@@ -17,6 +17,7 @@ from .api import (
     NetBirdAuthenticationError,
     NetBirdDataError,
     NetBirdPermissionError,
+    NetBirdRateLimitError,
     NetBirdUpdateError,
 )
 from .const import DOMAIN, PEER_UPDATE_INTERVAL_SECONDS
@@ -37,9 +38,9 @@ class NetBirdRefreshError(UpdateFailed):
 
     translation_domain = DOMAIN
 
-    def __init__(self, reason: str) -> None:
+    def __init__(self, reason: str, *, retry_after: float | None = None) -> None:
         """Initialize with a safe reason, never an API exception message."""
-        super().__init__(_FAILURE_MESSAGES[reason])
+        super().__init__(_FAILURE_MESSAGES[reason], retry_after=retry_after)
         self.translation_key = reason
 
 
@@ -94,6 +95,11 @@ class NetBirdPeerCoordinator(DataUpdateCoordinator[tuple[NetBirdPeer, ...]]):
             raise NetBirdRefreshError("insufficient_permissions") from None
         except NetBirdDataError:
             raise NetBirdRefreshError("invalid_response") from None
+        except NetBirdRateLimitError as err:
+            raise NetBirdRefreshError(
+                "cannot_connect",
+                retry_after=err.retry_delay(PEER_UPDATE_INTERVAL_SECONDS),
+            ) from None
         except NetBirdUpdateError:
             raise NetBirdRefreshError("cannot_connect") from None
         except Exception:

@@ -19,8 +19,10 @@ from .api import (
     NetBirdAuthenticationError,
     NetBirdDataError,
     NetBirdPermissionError,
+    NetBirdRateLimitError,
     NetBirdUpdateError,
 )
+from .async_utils import async_gather_cancel_on_error
 from .const import (
     DOMAIN,
     TOPOLOGY_REQUEST_CONCURRENCY,
@@ -90,14 +92,19 @@ class NetBirdTopologyCoordinator(DataUpdateCoordinator[NetBirdTopologySnapshot])
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN, translation_key="invalid_auth"
             ) from None
-        except NetBirdPermissionError as err:
-            raise UpdateFailed("NetBird topology permission denied") from err
-        except NetBirdDataError as err:
-            raise UpdateFailed("NetBird topology response is invalid") from err
-        except NetBirdUpdateError as err:
-            raise UpdateFailed("NetBird topology connection failed") from err
-        except Exception as err:
-            raise UpdateFailed("Unexpected NetBird topology failure") from err
+        except NetBirdPermissionError:
+            raise UpdateFailed("NetBird topology permission denied") from None
+        except NetBirdDataError:
+            raise UpdateFailed("NetBird topology response is invalid") from None
+        except NetBirdRateLimitError as err:
+            raise UpdateFailed(
+                "NetBird topology rate limit reached",
+                retry_after=err.retry_delay(TOPOLOGY_UPDATE_INTERVAL_SECONDS),
+            ) from None
+        except NetBirdUpdateError:
+            raise UpdateFailed("NetBird topology connection failed") from None
+        except Exception:
+            raise UpdateFailed("Unexpected NetBird topology failure") from None
 
         semaphore = asyncio.Semaphore(TOPOLOGY_REQUEST_CONCURRENCY)
 
@@ -107,7 +114,7 @@ class NetBirdTopologyCoordinator(DataUpdateCoordinator[NetBirdTopologySnapshot])
             async with semaphore:
                 try:
                     return await self._client.async_get_network_resources(network.id)
-                except NetBirdAuthenticationError:
+                except NetBirdAuthenticationError, NetBirdRateLimitError:
                     raise
                 except NetBirdUpdateError:
                     return None
@@ -118,25 +125,42 @@ class NetBirdTopologyCoordinator(DataUpdateCoordinator[NetBirdTopologySnapshot])
             async with semaphore:
                 try:
                     return await self._client.async_get_network_routers(network.id)
-                except NetBirdAuthenticationError:
+                except NetBirdAuthenticationError, NetBirdRateLimitError:
                     raise
                 except NetBirdUpdateError:
                     return None
 
         try:
-            resource_sections, router_sections = await asyncio.gather(
-                asyncio.gather(*(resources_for(network) for network in networks)),
-                asyncio.gather(*(routers_for(network) for network in networks)),
+            resources_task = asyncio.create_task(
+                async_gather_cancel_on_error(
+                    *(resources_for(network) for network in networks)
+                )
             )
+            routers_task = asyncio.create_task(
+                async_gather_cancel_on_error(
+                    *(routers_for(network) for network in networks)
+                )
+            )
+            await async_gather_cancel_on_error(resources_task, routers_task)
         except NetBirdAuthenticationError:
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN, translation_key="invalid_auth"
             ) from None
+        except NetBirdRateLimitError as err:
+            raise UpdateFailed(
+                "NetBird topology rate limit reached",
+                retry_after=err.retry_delay(TOPOLOGY_UPDATE_INTERVAL_SECONDS),
+            ) from None
+        except Exception:
+            raise UpdateFailed("Unexpected NetBird topology failure") from None
         return NetBirdTopologySnapshot(
             networks=tuple(
                 NetBirdNetworkTopology(network, resources, routers)
                 for network, resources, routers in zip(
-                    networks, resource_sections, router_sections, strict=True
+                    networks,
+                    resources_task.result(),
+                    routers_task.result(),
+                    strict=True,
                 )
             )
         )

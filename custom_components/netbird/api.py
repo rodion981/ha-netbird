@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import math
 import ssl
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any, Final
 
 from aiohttp import (
@@ -67,6 +69,21 @@ class NetBirdRateLimitError(NetBirdResponseError):
     def __init__(self, retry_after: str | None) -> None:
         super().__init__(429)
         self.retry_after = retry_after
+
+    def retry_delay(self, minimum: int) -> float:
+        """Honor valid delta-seconds/HTTP dates without shortening normal polling."""
+        value = (self.retry_after or "").strip()
+        try:
+            if value.isascii() and value.isdecimal():
+                delay = float(value)
+            else:
+                retry_at = parsedate_to_datetime(value)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=UTC)
+                delay = (retry_at - datetime.now(UTC)).total_seconds()
+        except ValueError, TypeError, OverflowError:
+            return float(minimum)
+        return max(float(minimum), delay) if math.isfinite(delay) else float(minimum)
 
 
 class NetBirdServerError(NetBirdResponseError):
