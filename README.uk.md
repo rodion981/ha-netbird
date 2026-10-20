@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">NetBird для Home Assistant</h1>
-<!-- netbird-doc-contract: {"release":"1.0.3","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-custom","manual"],"branding":"included"} -->
+<!-- netbird-doc-contract: {"release":"1.0.4","endpoints":["/api/accounts","/api/peers","/api/networks","/api/networks/{id}/resources","/api/networks/{id}/routers"],"group_router_resolution":"supported","evidence":["mocked-tests","hosted-ci","manual-live"],"distribution":["hacs-default","hacs-custom","manual"],"branding":"included"} -->
 <p align="center">Стан peer-пристроїв і Networks NetBird Cloud або власного сервера у Home Assistant.</p>
 
 <p align="center">
@@ -21,7 +21,9 @@ NetBird для Home Assistant це незалежна read-only інтеграц
 
 ## Стан проєкту
 
-[Версія `1.0.3`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.3) захищає debug-журнали топології, завершує паралельні запити після помилки, враховує паузи HTTP 429 і виправляє розділення облікових записів та користувацькі назви пристроїв в обох dashboards. Self-hosted форми коректно повідомляють про помилки DNS і некоректний CA з не-ASCII символами. Cloud/self-hosted моніторинг та ідентифікатори сутностей залишаються сумісними. Встановлюйте через кастомний репозиторій HACS або вручну; це не означає наявність у стандартному каталозі HACS.
+[Версія `1.0.4`](https://github.com/rodion981/ha-netbird/releases/tag/v1.0.4) виправляє посилання на документацію в Home Assistant: тепер воно відкриває README та інструкцію налаштування цієї інтеграції. Українська й англійська інструкції встановлення тепер описують стандартний каталог HACS. Логіка моніторингу та всі наявні ідентифікатори сутностей залишаються незмінними.
+
+20 жовтня 2026 року інтеграцію [прийнято до стандартного каталогу HACS](https://github.com/hacs/default/pull/11339). Знайдіть **NetBird HA Monitor** безпосередньо в HACS або встановіть вручну.
 
 ## Можливості
 
@@ -42,17 +44,18 @@ Cloud використовує фіксовану адресу `https://api.netb
 
 Потрібні Home Assistant `2026.9.3` або новіший і PAT із доступом до облікового запису, peer-пристроїв, Networks, Resources та Routers. Self-hosted сервер має надавати той самий використаний контракт Management API через HTTPS. Home Assistant постачає власний Python; для розробки потрібен Python `3.14.2` або новіший.
 
-### Через кастомний репозиторій HACS
+### Через HACS
 
 Натисніть кнопку HACS вище або:
 
-1. Відкрийте **HACS > Custom repositories**.
-2. Додайте `https://github.com/rodion981/ha-netbird` із типом **Integration**.
-3. Відкрийте **NetBird HA Monitor** і натисніть **Download**.
-4. Перезапустіть Home Assistant.
-5. Відкрийте **Налаштування > Пристрої та служби > Додати інтеграцію**, виберіть **NetBird HA Monitor**, потім Cloud або self-hosted і введіть запитані дані.
+1. Відкрийте **HACS** і знайдіть **NetBird HA Monitor** через пошук.
+2. Відкрийте інтеграцію й натисніть **Download**.
+3. Перезапустіть Home Assistant.
+4. Відкрийте **Налаштування > Пристрої та служби > Додати інтеграцію**, виберіть **NetBird HA Monitor**, потім Cloud або self-hosted і введіть запитані дані.
 
 Кнопка відкриває HACS; завантаження та налаштування інтеграції виконуються окремо. Якщо HACS не має доступу до репозиторію, встановіть інтеграцію вручну.
+
+Якщо інтеграція ще не з'явилася у вашому каталозі, відкрийте **HACS > ⋮ > Custom repositories**, додайте `https://github.com/rodion981/ha-netbird` із типом **Integration** та продовжте з кроку завантаження вище. Для вже встановленої через HACS інтеграції використовуйте звичайний механізм оновлення.
 
 ### Приклад dashboard
 

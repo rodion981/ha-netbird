@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The project follows [Se
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-10-20
+
+### Fixed
+
+- Point the Home Assistant documentation link to this integration's repository and setup instructions, as requested during HACS review.
+
+### Changed
+
+- Document installation from the HACS default catalog in English and Ukrainian after acceptance in hacs/default PR #11339 on 20 October 2026; retain custom-repository and manual installation as alternatives.
+
 ## [1.0.3] - 2026-10-12
 
 ### Fixed

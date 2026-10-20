@@ -131,15 +131,16 @@ def test_documentation_limitations_and_evidence_are_current() -> None:
 
 
 def test_public_distribution_contract_uses_local_facts() -> None:
-    """HACS, branding, and release claims have checked-in evidence."""
+    """Documentation links, HACS inclusion, and releases have recorded evidence."""
     manifest = json.loads(_read(INTEGRATION / "manifest.json"))
     hacs = json.loads(_read(ROOT / "hacs.json"))
     version = manifest["version"]
     expected_distribution = {
-        "distribution": ["hacs-custom", "manual"],
+        "distribution": ["hacs-default", "hacs-custom", "manual"],
         "branding": "included",
     }
 
+    assert manifest["documentation"] == "https://github.com/rodion981/ha-netbird"
     assert hacs["name"] == manifest["name"]
     assert hacs["render_readme"] is True
     assert (
@@ -152,6 +153,7 @@ def test_public_distribution_contract_uses_local_facts() -> None:
         assert {
             key: contract[key] for key in expected_distribution
         } == expected_distribution, path.name
+        assert "https://github.com/hacs/default/pull/11339" in _read(path), path.name
     for path in DOCUMENTATION_PATHS[:2]:
         text = _read(path)
         assert "my.home-assistant.io/redirect/hacs_repository/" in text
